@@ -10,6 +10,13 @@ function boot(data=null){
 const {run}=boot();
 run(`function pin(title){const e=RULE_ENTRIES.find(e=>e.title===title&&EFFECT_CATEGORIES.includes(e.category));if(!e)throw Error(title);toggleRulePin(e.id);return e.id;}function config(title,cfg){const id=RULE_ENTRIES.find(e=>e.title===title&&EFFECT_CATEGORIES.includes(e.category)).id;state.effects.sources[id]=cfg;return id;}function reset(){state=structuredClone(initial);migrateCharacter(state);migrateProgression();migrateAllocation();migratePlay();migrateUi();migrateMovement();migrateEffects();syncMaxHp();}`);
 assert.equal(run('statTotal("DEX")'),18);assert.equal(run('hpFormulaResult().value'),3600);
+assert.deepEqual(JSON.parse(run('JSON.stringify(EFFECT_STATS.map(statCap))')),Array(8).fill(25));
+run('state.info.race="Custom race";');assert.deepEqual(JSON.parse(run('JSON.stringify(EFFECT_STATS.map(statCap))')),Array(8).fill(20));
+run('reset();state.effects.baseCaps.STR=25;');assert.equal(run('statCap("STR")'),30);
+run('reset();state.info.freeStats=1000;');assert.ok(run('setBaseStat(0,25)'));const bankBeforeLimit=run('state.info.freeStats');assert.equal(run('setBaseStat(0,26)'),false);assert.equal(run('state.info.freeStats'),bankBeforeLimit);
+run('state.stats[0][2]=30;');assert.ok(run('renderStat(state.stats[0],0).includes("выше предела")'));assert.ok(run('setBaseStat(0,29)'));assert.equal(run('setBaseStat(0,30)'),false);
+run('reset();state.info.race="Диззри";state.info.freeStats=1000;state.stats.find(s=>s[1]==="CON")[2]=14;');assert.equal(run('statCap("CON")'),10);assert.equal(run('statCap("INT")'),null);assert.ok(run('setBaseStat(2,15)'));assert.equal(run('setBaseStat(2,16)'),false);
+run('reset();');assert.ok(run('renderStat(state.stats[0],0).includes("Макс. <b>25</b>")'));
 run('state.effects.baseCaps.CON=20;pin("Боец");config("Боец",{style:"STR"});');
 assert.equal(run('statTotal("CON")'),20);assert.equal(run('statCap("CON")'),30);assert.equal(run('state.stats.find(s=>s[1]==="CON")[2]'),20);
 run('reset();state.info.race="Ноко";');assert.equal(run('statTotal("DEX")'),28);assert.equal(run('statTotal("CHA")'),7);
@@ -42,6 +49,7 @@ run('config("Вор",{conditions:{illegal:false,evasion:false}});');assert.equal
 run('reset();pin("Дуболом");const melee=state.skills.find(s=>combatKey(s)&&/ближний/.test(s[0].toLowerCase()));');assert.equal(run('chance(melee)'),48);assert.equal(run('resolveRoll(melee,"defense",0,0,1).target'),3);
 run('reset();pin("Увеличить максимум стата (стат)");config("Увеличить максимум стата (стат)",{stat:"STR"});state.effects.baseCaps.STR=20;pin("Взять 20");config("Взять 20",{stat:"STR"});');assert.equal(run('statTotal("STR")'),20);assert.equal(run('statCap("STR")'),30);
 run('reset();state.info.race="Морферы.";state.stats[0][2]=30;');assert.equal(run('statTotal("STR")'),20);
+run('pin("Снять ограничение (стат)");config("Снять ограничение (стат)",{stat:"STR"});');assert.equal(run('statCap("STR")'),20);
 run('reset();state.info.race="Соло";pin("Стрелок");');assert.equal(run('selectedEffectSources().filter(e=>e.title==="Стрелок").length'),1);
 run('state.effects.overrides["chance:"+skillIdentity(state.skills[0])]={enabled:true,mode:"set",value:77};');assert.equal(run('chance(state.skills[0])'),77);
 const snapshot=run('JSON.stringify(state)');const reload=boot(snapshot);assert.equal(reload.run('chance(state.skills[0])'),77);assert.equal(reload.run('state.skills[0][7]'),run('state.skills[0][7]'));
