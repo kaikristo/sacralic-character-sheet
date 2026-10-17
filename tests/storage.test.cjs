@@ -1,0 +1,24 @@
+const assert=require('node:assert/strict');
+const {validateCharacterData,serializeLibrary,deserializeLibrary,imageFromDataUrl,LIBRARY_FORMAT}=require('../dist/storage.js');
+global.FileReader=class {readAsDataURL(blob){blob.arrayBuffer().then(buffer=>{this.result='data:'+blob.type+';base64,'+Buffer.from(buffer).toString('base64');this.onload();},error=>{this.error=error;this.onerror();});}};
+const data={info:{name:'Round trip',player:'QA',race:'Человек',notes:'note',hp:48,maxhp:48,level:1,height:0,weight:0,money:0,mutation:0,portraitId:'image-original'},stats:['STR','DEX','CON','RTC','ACC','INT','LCK','CHA'].map(code=>[code,code,8,0]),skills:[['Custom',2,'Мирные','INT','навык * 7 + INT','note']],items:[],zones:Array.from({length:6},()=>({armor:0,damage:0,note:''})),log:[],play:{pinned:['0-16'],resources:[{name:'EP',value:3,max:10}],movement:{walkFormula:'1',runFormula:'3',jumpFormula:'2 * RUN + DEX / 10',walkBonus:0,runBonus:0,jumpBonus:2}}};
+const png='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aZ1kAAAAASUVORK5CYII=';
+let id=0;const makeId=()=>`generated-${++id}`;
+(async()=>{
+ const image={id:'image-original',name:'portrait.png',blob:imageFromDataUrl(png)},record={id:'character-original',createdAt:'2026-10-17',updatedAt:'2026-10-17',data};
+ const encoded=await serializeLibrary([record],[image],'character'),decoded=deserializeLibrary(encoded,makeId);
+ assert.equal(JSON.parse(encoded).format,LIBRARY_FORMAT);assert.equal(decoded.records.length,1);assert.equal(decoded.images.length,1);
+ assert.notEqual(decoded.records[0].id,record.id);assert.notEqual(decoded.images[0].id,image.id);assert.equal(decoded.records[0].data.info.portraitId,decoded.images[0].id);
+ assert.equal(await decoded.images[0].blob.arrayBuffer().then(b=>Buffer.from(b).toString('hex')),await image.blob.arrayBuffer().then(b=>Buffer.from(b).toString('hex')));
+ assert.deepEqual(decoded.records[0].data.play,data.play);assert.equal(decoded.records[0].data.skills[0][4],'навык * 7 + INT');
+ const old=structuredClone(data);delete old.info.portraitId;assert.equal(deserializeLibrary(JSON.stringify(old),makeId).records.length,1);
+ const future=JSON.parse(encoded);future.version=2;assert.throws(()=>deserializeLibrary(JSON.stringify(future),makeId),/версия/);
+ const missing=JSON.parse(encoded);missing.images=[];assert.throws(()=>deserializeLibrary(JSON.stringify(missing),makeId),/отсутствует портрет/);
+ const multiple=await serializeLibrary([record,{...record,id:'second'}],[image]);const twice=deserializeLibrary(multiple,makeId);assert.equal(twice.records[0].data.info.portraitId,twice.records[1].data.info.portraitId);assert.notEqual(twice.records[0].id,twice.records[1].id);
+ assert.throws(()=>imageFromDataUrl('data:image/svg+xml;base64,PHN2Zz4='),/Неподдерживаемое/);
+ assert.throws(()=>imageFromDataUrl('data:image/png;base64,YWJj'),/не соответствует/);
+ const invalid=structuredClone(data);invalid.stats[0][1]='DEX';assert.throws(()=>validateCharacterData(invalid),/характеристики/);
+ assert.throws(()=>deserializeLibrary('{broken',makeId),/JSON/);
+ await assert.rejects(()=>serializeLibrary([record],[]),/Портрет не найден/);
+ console.log('Passed: character + image round trip, shared portraits, unique import IDs, legacy JSON, future versions and malformed data rejection.');
+})().catch(error=>{console.error(error);process.exitCode=1;});
