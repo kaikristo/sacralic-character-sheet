@@ -53,6 +53,9 @@ const engine=(store,remote,extra={})=>new CloudSyncEngine({store,remote,isCurren
  await vm.runInContext('selectCloudAccount({uid:"bob",email:"bob@example.com"})',ui);assert.equal((await ui.characterStore.list()).length,0,'another account must have an empty isolated library');assert.equal((await guest.list())[0].data.info.name,'Guest hero');
  await vm.runInContext('selectCloudAccount({uid:"alice",email:"alice@example.com"})',ui);assert.equal((await ui.characterStore.list())[0].data.info.name,'Alice hero');
  await vm.runInContext('selectCloudAccount(null)',ui);assert.equal(ui.characterStore,guest);assert.equal(element.inert,false);
+ let releaseAlice,enteredAlice;const aliceHeld=new Promise(resolve=>releaseAlice=resolve),aliceEntered=new Promise(resolve=>enteredAlice=resolve),aliceStore=stores.get('sacralic-library-google-alice'),originalList=aliceStore.list.bind(aliceStore);
+ aliceStore.list=async()=>{enteredAlice();await aliceHeld;return originalList();};const switchingAlice=vm.runInContext('selectCloudAccount({uid:"alice"})',ui);await aliceEntered;
+ await vm.runInContext('selectCloudAccount({uid:"bob"})',ui);releaseAlice();await switchingAlice;assert.equal(ui.characterStore.name,'sacralic-library-google-bob');assert.equal(ui.characterRecords.length,0,'a late response from Alice must not appear in Bob library');assert.equal(element.inert,false);
  console.log('Passed: auth account switching keeps guest, Alice and Bob libraries isolated and restores local account cache.');
  console.log('Passed: cloud round trip with portraits, no-op sync, revision conflicts and copies, active editing deferral, concurrent local changes, account isolation, trash, invalid payloads and image chunk bounds.');
 })().catch(error=>{console.error(error);process.exitCode=1;});
