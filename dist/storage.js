@@ -32,7 +32,7 @@ function validateCharacterData(input){
  if(!codes.every(code=>d.stats.filter(s=>Array.isArray(s)&&s[1]===code&&Number.isSafeInteger(s[2])&&s[2]>=0&&(s[3]===undefined||Number.isFinite(s[3])&&s[3]>=0)).length===1))throw Error('Некорректные характеристики.');
  for(const key of ['hp','maxhp','level','height','weight','money','mutation'])if(!Number.isFinite(d.info[key])||d.info[key]<0)throw Error('Некорректное поле: '+key);
  if(!Number.isSafeInteger(d.info.level)||d.info.level<1)throw Error('Некорректный уровень.');
- if(!d.skills.every(s=>Array.isArray(s)&&s.length>=3&&s.length<=7&&typeof s[0]==='string'&&Number.isSafeInteger(s[1])&&s[1]>=1&&(s[4]===undefined||typeof s[4]==='string'&&s[4].length<=500)))throw Error('Некорректные навыки.');
+ if(!d.skills.every(s=>Array.isArray(s)&&s.length>=3&&s.length<=8&&typeof s[0]==='string'&&Number.isSafeInteger(s[1])&&s[1]>=1&&(s[4]===undefined||typeof s[4]==='string'&&s[4].length<=500)))throw Error('Некорректные навыки.');
  if(!d.zones.every(z=>z&&Number.isFinite(z.armor)&&z.armor>=0&&Number.isSafeInteger(z.damage)&&z.damage>=0))throw Error('Некорректные зоны.');
  if(!d.items.every(item=>Array.isArray(item)?item.length===4&&typeof item[0]==='string'&&Number.isFinite(item[1])&&item[1]>=1:item&&typeof item.name==='string'&&Number.isSafeInteger(item.qty)&&item.qty>=1&&['Оружие','Броня','Аксессуары','Прочее'].includes(item.category)&&(!item.bonuses||Object.entries(item.bonuses).every(([k,v])=>codes.includes(k)&&Number.isFinite(v)&&v>=0))))throw Error('Некорректный инвентарь.');
  for(const key of ['race','player','notes'])if(typeof d.info[key]!=='string')d.info[key]='';
