@@ -73,7 +73,7 @@ document.addEventListener('click',event=>{const b=event.target.closest('[data-ta
  case 'stat-sources':statEdit=-1;page=8;render();return;
  case 'xp-toggle':document.body.classList.toggle('mobile-xp-open');{const grid=document.querySelector('.overview-deck');if(grid)grid.style.height=Math.max(280,innerHeight-grid.getBoundingClientRect().top-8)+'px';}return;
  case 'slide':{const grid=document.querySelector('.overview-deck');mobileOverviewSlide=+b.dataset.slide;grid.scrollTo({left:(grid.clientWidth+8)*mobileOverviewSlide,behavior:'instant'});return;}
- case 'attack-collapse':{const panel=b.closest('.available-attacks'),open=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',String(!open));for(const child of [...panel.children])if(!child.contains(b))child.hidden=open;state.ui.collapsed['0:attacks:0']=open;panel.classList.toggle('panel-collapsed',open);b.textContent='Доступные атаки '+(open?'▸':'▾');save();return;}
+ case 'attack-collapse':{const panel=b.closest('.available-attacks'),open=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',String(!open));for(const child of [...panel.children])if(!child.contains(b))child.hidden=open;state.ui.collapsed['0:attacks:0']=open;panel.classList.toggle('panel-collapsed',open);b.textContent='Доступные атаки '+(open?'▸':'▾');save();if(typeof refreshPanelLayout==='function')requestAnimationFrame(()=>refreshPanelLayout(panel));return;}
  case 'attack':{const item=state.items[+b.dataset.weapon],a=attackNumbers(item);if(a.cost===null)throw Error('Укажите стоимость атаки.');spendAction(a.cost,'Атака: '+item.name);save();render();return;}
  }}catch(error){toast(error.message);}},true);
 window.matchMedia('(max-width:700px)').addEventListener?.('change',()=>render());
