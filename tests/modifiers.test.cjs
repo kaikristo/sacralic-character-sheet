@@ -1,7 +1,7 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict'),{webcrypto}=require('node:crypto');
-const root=path.resolve(__dirname,'..'),elements={};
-const element=()=>({value:'',textContent:'',innerHTML:'',dataset:{},style:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},prepend(){},insertAdjacentHTML(){},showModal(){},querySelector(){return null;}});
-const ctx={structuredClone,console,crypto:webcrypto,Date,Blob,URL,Uint8Array,setTimeout:()=>0,clearTimeout(){},requestAnimationFrame:()=>0,cancelAnimationFrame(){},indexedDB:{open:()=>({})},window:{scrollTo(){},matchMedia:()=>({matches:false})},localStorage:{getItem:()=>null,setItem(){}},document:{body:element(),documentElement:{style:{setProperty(){}}},createElement:element,querySelector:s=>elements[s]??=element(),querySelectorAll:()=>[],addEventListener(){}}};
+const root=path.resolve(__dirname,'..'),elements={},listeners={};
+const element=()=>({value:'',textContent:'',innerHTML:'',dataset:{},style:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},prepend(){},append(){},remove(){},insertAdjacentHTML(){},showModal(){},querySelector(){return null;}});
+const ctx={structuredClone,console,crypto:webcrypto,Date,Blob,URL,Uint8Array,setTimeout:()=>0,clearTimeout(){},requestAnimationFrame:()=>0,cancelAnimationFrame(){},indexedDB:{open:()=>({})},window:{scrollTo(){},matchMedia:()=>({matches:false})},localStorage:{getItem:()=>null,setItem(){}},document:{body:element(),documentElement:{style:{setProperty(){}}},createElement:element,querySelector:s=>elements[s]??=element(),querySelectorAll:()=>[],addEventListener(type,fn){(listeners[type]??=[]).push(fn);}}};
 vm.createContext(ctx);for(const file of ['combat','experience','catalog','app','rules-data','play','storage','library','effects','workflow','tabletop','wounds','modifiers'])vm.runInContext(fs.readFileSync(path.join(root,'dist',file+'.js'),'utf8'),ctx,{filename:file+'.js'});
 const run=s=>vm.runInContext(s,ctx);run('migrateEffects();');
 
@@ -30,3 +30,18 @@ assert.equal(run('isDialogBackdrop({target:testModal,clientX:30,clientY:50})'),f
 run('dismissDialogBackdrop(testModal)');assert.equal(modal.cancelled,true);assert.equal(modal.open,false);
 modal.open=true;modal.dispatchEvent=event=>{event.preventDefault();return false;};run('dismissDialogBackdrop(testModal)');assert.equal(modal.open,true);
 console.log('Passed: overview attack controls hidden, combat execution retained, backdrop bounds and cancellable dismissal.');
+
+run('state.play.favoriteSkills=[];toggleFavoriteSkill(state.skills.indexOf(light))');assert.ok(run('isFavoriteSkill(light)'));assert.match(run('renderPlaySummary()'),/Шансы избранных навыков/);assert.ok(run('renderFavoriteSkills().includes(chance(light)+"%")'));
+run('state.skills.reverse();migrateEffects()');assert.ok(run('isFavoriteSkill(light)'));assert.ok(run('validateCharacterData(JSON.parse(JSON.stringify(state))).play.favoriteSkills.includes(skillIdentity(light))'));
+run('toggleFavoriteSkill(state.skills.indexOf(light))');assert.equal(run('renderFavoriteSkills()'),'');
+assert.deepEqual(JSON.parse(run('JSON.stringify(SKILL_CATALOG.filter(s=>s.id.startsWith("sacralic-armor-")).map(s=>s.name))')),['Легкая броня','Средняя броня','Тяжелая броня']);assert.equal(run('SKILL_CATALOG[0].id'),'sacralic-0');
+// Simulate touch pointer handlers independently of the browser, including cancellation.
+run('creationDraft=newCreationDraft()');
+const dialog={...element(),getBoundingClientRect:()=>({top:0,bottom:600}),querySelectorAll:()=>[],querySelector:()=>element(),scrollTop:180};elements['.creation-dialog']=dialog;
+const handle={...element(),dataset:{poolToken:'1'},disabled:false,textContent:'10',setPointerCapture(){},closest:selector=>selector==='dialog'?dialog:null};
+const slot={...element(),dataset:{createStat:'2'},closest:()=>slot};ctx.document.elementFromPoint=()=>slot;
+const down=listeners.pointerdown.find(fn=>fn.toString().includes('creationPointer={')),move=listeners.pointermove.find(fn=>fn.toString().includes('const d=creationPointer')),up=listeners.pointerup.find(fn=>fn.toString().includes('const d=creationPointer'));
+const touch={pointerType:'touch',pointerId:7,clientX:50,clientY:100,preventDefault(){},target:{closest:()=>handle}};
+down(touch);move({...touch,clientX:130,clientY:250});up({...touch,clientX:130,clientY:250});assert.equal(run('creationDraft.assigned[2]'),1);assert.equal(dialog.scrollTop,180);assert.equal(run('creationPointer'),null);
+down(touch);run('clearCreationDrag()');assert.equal(run('creationPointer'),null);
+console.log('Passed: favorite skill migration, live chances and JSON round trip, stable armor catalog IDs, touch creation drag and cancellation.');

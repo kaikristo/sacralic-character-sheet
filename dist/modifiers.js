@@ -1,6 +1,7 @@
 /* Explicit manual skill bonuses, toggled conditions and ammunition transactions. */
 let conditionEditor=null,conditionDraft=null;
 function migrateManualModifiers(){
+ const ids=new Set(state.skills.map(skillIdentity));state.play.favoriteSkills=[...new Set((Array.isArray(state.play.favoriteSkills)?state.play.favoriteSkills:[]).filter(id=>typeof id==='string'&&ids.has(id)))];
  if(!state.play.skillBonuses||typeof state.play.skillBonuses!=='object'||Array.isArray(state.play.skillBonuses))state.play.skillBonuses={};
  for(const [id,b] of Object.entries(state.play.skillBonuses))state.play.skillBonuses[id]={level:Number.isSafeInteger(b?.level)?b.level:0,chance:Number.isFinite(b?.chance)?b.chance:0};
  if(!Array.isArray(state.play.customConditions))state.play.customConditions=[];
@@ -88,3 +89,9 @@ document.addEventListener('click',event=>{
  }render();}catch(e){const error=document.querySelector('#condition-editor-error');if(error)error.textContent=e.message;else toast(e.message);}
 },true);
 migrateEffects();render();
+
+function renderFavoriteSkills(){const skills=state.skills.filter(isFavoriteSkill);return skills.length?`<div class="favorite-skill-chances" aria-label="Шансы избранных навыков">${skills.map(s=>`<div><span>${esc(s[0])}</span><strong>${chance(s)===null?'Ошибка':chance(s)+'%'}</strong></div>`).join('')}</div>`:'';}
+const beforeFavoriteSummary=renderPlaySummary;
+renderPlaySummary=function(){return beforeFavoriteSummary().replace('</div><div class="play-shortcuts">','</div>'+renderFavoriteSkills()+'<div class="play-shortcuts">');};
+document.addEventListener('click',event=>{const b=event.target.closest('[data-favorite-skill]');if(!b)return;event.stopImmediatePropagation();toggleFavoriteSkill(+b.dataset.favoriteSkill);save();render();},true);
+render();

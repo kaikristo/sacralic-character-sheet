@@ -17,7 +17,7 @@ function assignCreationToken(token,stat){
 }
 function renderCreation(){
  const d=creationDraft??=newCreationDraft(),pool=d.mode==='array'?STARTING_POOL:d.pool,ready=d.mode==='array'||d.rolled;
- return `<dialog id="library-dialog" class="formula-dialog creation-dialog" aria-labelledby="library-dialog-title"><div class="toolbar"><h2 id="library-dialog-title">Новый персонаж</h2><button data-library="close-modal" aria-label="Закрыть создание">×</button></div><div class="fields"><label>Имя персонажа<input id="new-character-name" data-creation-field="name" value="${esc(d.name)}" maxlength="160"></label><label>Раса<select id="new-character-race" data-creation-field="race">${RULE_ENTRIES.filter(e=>e.category==='Расы').map(e=>`<option ${d.race===e.title?'selected':''}>${esc(e.title)}</option>`).join('')}</select></label><label>Имя игрока<input id="new-character-player" data-creation-field="player" value="${esc(d.player)}" maxlength="160"></label></div><h3>Стартовые характеристики</h3><div class="play-shortcuts"><button data-workflow="creation-mode" data-mode="array" aria-pressed="${d.mode==='array'}">Готовый пул · 10, 10, 8, 8, 6, 6, 4, 4</button><button data-workflow="creation-mode" data-mode="dice" aria-pressed="${d.mode==='dice'}">Броски · 8 × 2d6</button></div>${d.mode==='dice'?`<p class="help-copy">Если нет ни одного значения ≥ 10, переброс бесплатный. Дополнительно — один переброс без условий. Новый пул полностью заменяет старый; вернуться к нему нельзя.</p><button data-workflow="creation-roll" ${d.rolled&&!canFreeReroll(d.pool)&&d.rerollUsed?'disabled':''}>${!d.rolled?'Бросить 8 × 2d6':canFreeReroll(d.pool)?'Бесплатный переброс · нет значений ≥ 10':d.rerollUsed?'Переброс использован':'Перебросить · 1 без условий'}</button><p class="help-copy">Переброс без условий: ${d.rerollUsed?'использован':'доступен'}.</p>`:''}${ready?`<p class="help-copy">Перетащите число на характеристику. На телефоне: нажмите число, затем характеристику. Нажатие на назначенное число возвращает его в пул.</p><div class="creation-pool" aria-label="Пул характеристик">${pool.map((n,i)=>`<button draggable="true" data-pool-token="${i}" data-workflow="creation-token" ${d.assigned.includes(i)?'disabled':''} aria-pressed="${creationToken===i}" aria-label="Число ${n}, номер ${i+1}">${n}</button>`).join('')}</div><div class="creation-stats">${initial.stats.map((s,i)=>`<button data-workflow="creation-assign" data-create-stat="${i}" class="creation-slot"><span>${esc(s[0])}<small>${s[1]}</small></span><b>${d.assigned[i]===null?'—':pool[d.assigned[i]]}</b></button>`).join('')}</div>`:''}<p id="library-dialog-error" class="formula-error" role="status"></p><div class="dialog-actions"><button data-library="close-modal">Отмена</button><button data-library="create" ${!ready||d.assigned.some(n=>n===null)?'disabled':''}>Создать персонажа</button></div></dialog>`;
+ return `<dialog id="library-dialog" class="formula-dialog creation-dialog" aria-labelledby="library-dialog-title"><div class="toolbar"><h2 id="library-dialog-title">Новый персонаж</h2><button data-library="close-modal" aria-label="Закрыть создание">×</button></div><div class="fields"><label>Имя персонажа<input id="new-character-name" data-creation-field="name" value="${esc(d.name)}" maxlength="160"></label><label>Раса<select id="new-character-race" data-creation-field="race">${RULE_ENTRIES.filter(e=>e.category==='Расы').map(e=>`<option ${d.race===e.title?'selected':''}>${esc(e.title)}</option>`).join('')}</select></label><label>Имя игрока<input id="new-character-player" data-creation-field="player" value="${esc(d.player)}" maxlength="160"></label></div><h3>Стартовые характеристики</h3><div class="play-shortcuts"><button data-workflow="creation-mode" data-mode="array" aria-pressed="${d.mode==='array'}">Готовый пул · 10, 10, 8, 8, 6, 6, 4, 4</button><button data-workflow="creation-mode" data-mode="dice" aria-pressed="${d.mode==='dice'}">Броски · 8 × 2d6</button></div>${d.mode==='dice'?`<p class="help-copy">Если нет ни одного значения ≥ 10, переброс бесплатный. Дополнительно — один переброс без условий. Новый пул полностью заменяет старый; вернуться к нему нельзя.</p><button data-workflow="creation-roll" ${d.rolled&&!canFreeReroll(d.pool)&&d.rerollUsed?'disabled':''}>${!d.rolled?'Бросить 8 × 2d6':canFreeReroll(d.pool)?'Бесплатный переброс · нет значений ≥ 10':d.rerollUsed?'Переброс использован':'Перебросить · 1 без условий'}</button><p class="help-copy">Переброс без условий: ${d.rerollUsed?'использован':'доступен'}.</p>`:''}${ready?`<p class="help-copy">Перетащите число на характеристику. На телефоне тоже можно перетаскивать или нажать число, затем характеристику. Нажатие на назначенное число возвращает его в пул.</p><div class="creation-pool" aria-label="Пул характеристик">${pool.map((n,i)=>`<button draggable="true" data-pool-token="${i}" data-workflow="creation-token" ${d.assigned.includes(i)?'disabled':''} aria-pressed="${creationToken===i}" aria-label="Число ${n}, номер ${i+1}">${n}</button>`).join('')}</div><div class="creation-stats">${initial.stats.map((s,i)=>`<button data-workflow="creation-assign" data-create-stat="${i}" class="creation-slot"><span>${esc(s[0])}<small>${s[1]}</small></span><b>${d.assigned[i]===null?'—':pool[d.assigned[i]]}</b></button>`).join('')}</div>`:''}<p id="library-dialog-error" class="formula-error" role="status"></p><div class="dialog-actions"><button data-library="close-modal">Отмена</button><button data-library="create" ${!ready||d.assigned.some(n=>n===null)?'disabled':''}>Создать персонажа</button></div></dialog>`;
 }
 const beforeWorkflowLibraryDialog=renderLibraryDialog;
 renderLibraryDialog=function(){return libraryModal==='new'?renderCreation():beforeWorkflowLibraryDialog();};
@@ -109,7 +109,7 @@ document.addEventListener('change',event=>{
 });
 document.addEventListener('dragstart',event=>{const token=event.target.closest('[data-pool-token]');if(token){creationToken=+token.dataset.poolToken;event.dataTransfer.setData('text/plain',token.dataset.poolToken);event.dataTransfer.effectAllowed='move';}});
 document.addEventListener('dragover',event=>{if(creationToken!==null&&event.target.closest('[data-create-stat]')){event.preventDefault();event.dataTransfer.dropEffect='move';}});
-document.addEventListener('drop',event=>{const slot=event.target.closest('[data-create-stat]');if(slot&&creationToken!==null){event.preventDefault();assignCreationToken(creationToken,+slot.dataset.createStat);render();}});
+document.addEventListener('drop',event=>{const slot=event.target.closest('[data-create-stat]');if(slot&&creationToken!==null){event.preventDefault();assignCreationToken(creationToken,+slot.dataset.createStat);refreshCreationAssignments();}});
 document.addEventListener('cancel',event=>{if(event.target.id==='feat-picker')featPickerOpen=false;},true);
 document.addEventListener('click',event=>{
  const b=event.target.closest('button');if(!b)return;const d=b.dataset;
@@ -120,8 +120,8 @@ document.addEventListener('click',event=>{
  switch(action){
   case 'creation-mode':if(creationDraft.mode!==d.mode){creationDraft.mode=d.mode;creationDraft.assigned=Array(8).fill(null);creationToken=null;}break;
   case 'creation-roll':rerollCreation(creationDraft);creationToken=null;break;
-  case 'creation-token':creationToken=+d.poolToken;break;
-  case 'creation-assign':if(creationToken!==null)assignCreationToken(creationToken,+d.createStat);else creationDraft.assigned[+d.createStat]=null;break;
+  case 'creation-token':if(creationSuppressClick){creationSuppressClick=false;return;}creationToken=+d.poolToken;refreshCreationAssignments();return;
+  case 'creation-assign':if(creationSuppressClick){creationSuppressClick=false;return;}if(creationToken!==null)assignCreationToken(creationToken,+d.createStat);else creationDraft.assigned[+d.createStat]=null;refreshCreationAssignments();return;
   case 'open-feats':featPickerOpen=true;break;
   case 'close-feats':featPickerOpen=false;break;
   case 'feat-add':case 'feat-remove':changeFeat(d.featId,d.payment,action==='feat-remove');document.querySelector('#feat-picker-balance').innerHTML=renderFeatBalances();document.querySelector('#feat-picker-results').innerHTML=renderFeatPickerResults();return;
@@ -130,3 +130,35 @@ document.addEventListener('click',event=>{
  render();
 },true);
 render();
+
+let creationPointer=null,creationSuppressClick=false,creationDragFrame=0;
+function refreshCreationAssignments(){
+ const dialog=document.querySelector('.creation-dialog');if(!dialog||!creationDraft)return;
+ const pool=creationDraft.mode==='array'?STARTING_POOL:creationDraft.pool;
+ dialog.querySelectorAll('[data-pool-token]').forEach(b=>{b.disabled=creationDraft.assigned.includes(+b.dataset.poolToken);b.setAttribute('aria-pressed',String(creationToken===+b.dataset.poolToken));});
+ dialog.querySelectorAll('[data-create-stat]').forEach(b=>{const token=creationDraft.assigned[+b.dataset.createStat];b.querySelector('b').textContent=token===null?'—':pool[token];});
+ dialog.querySelector('[data-library="create"]').disabled=creationDraft.assigned.some(n=>n===null);
+}
+function clearCreationDrag(){cancelAnimationFrame(creationDragFrame);document.querySelector('.creation-drag-ghost')?.remove();document.querySelectorAll('.creation-drop-target').forEach(e=>e.classList.remove('creation-drop-target'));creationPointer=null;}
+function scrollCreationDrag(){
+ const d=creationPointer;if(!d?.moved)return;const dialog=d.handle.closest('dialog'),r=dialog.getBoundingClientRect();
+ const speed=d.y<r.top+85?-10:d.y>r.bottom-85?10:0;if(speed)dialog.scrollTop+=speed;
+ const slot=document.elementFromPoint(d.x,d.y)?.closest('[data-create-stat]');document.querySelectorAll('.creation-drop-target').forEach(e=>e.classList.toggle('creation-drop-target',e===slot));slot?.classList.add('creation-drop-target');
+ creationDragFrame=requestAnimationFrame(scrollCreationDrag);
+}
+document.addEventListener('pointerdown',event=>{
+ if(event.pointerType==='mouse')return;const handle=event.target.closest('[data-pool-token]');if(!handle||handle.disabled)return;
+ creationSuppressClick=false;creationPointer={handle,token:+handle.dataset.poolToken,id:event.pointerId,x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,moved:false};handle.setPointerCapture(event.pointerId);event.preventDefault();
+});
+document.addEventListener('pointermove',event=>{
+ const d=creationPointer;if(!d||d.id!==event.pointerId)return;d.x=event.clientX;d.y=event.clientY;
+ if(!d.moved&&Math.hypot(d.x-d.startX,d.y-d.startY)<6)return;
+ if(!d.moved){d.moved=true;const ghost=document.createElement('div');ghost.className='creation-drag-ghost';ghost.textContent=d.handle.textContent;d.handle.closest('dialog').append(ghost);scrollCreationDrag();}
+ const ghost=document.querySelector('.creation-drag-ghost');ghost.style.left=d.x+'px';ghost.style.top=d.y+'px';event.preventDefault();
+},{passive:false});
+document.addEventListener('pointerup',event=>{
+ const d=creationPointer;if(!d||d.id!==event.pointerId)return;
+ if(d.moved){const slot=document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-create-stat]');if(slot)assignCreationToken(d.token,+slot.dataset.createStat);creationSuppressClick=true;}else creationToken=d.token;
+ clearCreationDrag();refreshCreationAssignments();event.preventDefault();
+});
+document.addEventListener('pointercancel',clearCreationDrag);

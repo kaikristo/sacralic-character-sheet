@@ -28,6 +28,7 @@ function packColumns(heights,capacity,gap=8){const columns=[];for(let i=0;i<heig
 function packMobileOverview(focus){
  const grid=document.querySelector('.overview-deck');if(!grid)return;
  const cards=[...grid.querySelectorAll(':scope > .overview-slide, :scope > .overview-page > .overview-slide')];if(!cards.length)return;cards.forEach((c,i)=>c.dataset.packOrder??=String(i));cards.sort((a,b)=>Number(a.dataset.packOrder)-Number(b.dataset.packOrder));
+ const scrollPositions=new Map(cards.map(c=>[c,c.scrollTop]));
  const focusCard=focus?.closest?.('.overview-slide'),label=focusCard?.dataset.slideLabel||packedFocusLabel;
  const width=grid.clientWidth,height=Math.max(280,innerHeight-grid.getBoundingClientRect().top-8);grid.style.height=height+'px';
  for(const card of cards){grid.append(card);card.style.width=width+'px';card.style.maxHeight=height+'px';card.style.height='auto';card.style.alignSelf='start';card.classList.add('packed-card');if(card.classList.contains('left-sheet')&&!card.querySelector('.skills-panel')?.classList.contains('panel-collapsed'))card.style.height=height+'px';}
@@ -37,6 +38,7 @@ function packMobileOverview(focus){
  const nav=document.querySelector('.overview-deck-nav'),selected=Math.max(0,columns.findIndex(c=>c.items.some(i=>cards[i].dataset.slideLabel===label)));mobileOverviewSlide=selected;
  if(nav){nav.innerHTML=columns.map((c,i)=>`<button data-tabletop="slide" data-slide="${i}" aria-label="Панель ${c.items.map(n=>cards[n].dataset.slideLabel).join(', ')}" aria-pressed="${i===selected}">${i+1}</button>`).join('');}
  grid.scrollLeft=(width+8)*selected;
+ for(const card of cards)card.scrollTop=scrollPositions.get(card)||0;
  if(!grid.dataset.packedScroll){grid.dataset.packedScroll='true';grid.addEventListener('scroll',()=>{const i=Math.round(grid.scrollLeft/(grid.clientWidth+8)),p=grid.children[i];packedFocusLabel=p?.querySelector('.overview-slide')?.dataset.slideLabel||packedFocusLabel;},{passive:true});}
 }
 function masonryPanels(grid){
