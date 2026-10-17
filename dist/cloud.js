@@ -1,6 +1,8 @@
 /* Firebase config identifies the public web client. Access is enforced by firestore.rules. */
 const firebaseConfig={apiKey:'AIzaSyBX33kHjXXCD-MH6dvbnxE_bor1mwV4C3I',authDomain:'ms-character-sheet.firebaseapp.com',projectId:'ms-character-sheet',storageBucket:'ms-character-sheet.firebasestorage.app',messagingSenderId:'137850447236',appId:'1:137850447236:web:139a22ebb1e50c6e86a9d1'};
 let cloudApi=null,cloudAuth=null,cloudDb=null,cloudUser=null,cloudEngine=null,cloudGeneration=0,cloudSwitching=false,cloudBusyEngine=null,cloudDialogOpen=false,cloudTimer=0,cloudStatus='Подключаем Google…',cloudError='',cloudAvailable=false,cloudImportBusy=false;
+const googleOAuthClientId='137850447236-n48v3tgcfluq6bs23op4k9alk6smi2kl.apps.googleusercontent.com';
+let googleLoginOpen=false,googleLoginBusy=false,googleIdentityPromise=null,googleIdentityInitialized=false;
 const guestCharacterStore=characterStore;
 function cloudErrorMessage(error){
  const code=error?.code||'';
@@ -16,7 +18,7 @@ function updateCloudStatus(text,error=''){cloudStatus=text;cloudError=error;docu
 function renderCloudPanel(){return `<section class="cloud-panel" aria-label="Облачное сохранение"><div><b>${cloudUser?'Сохранения Google':'Сохранения между устройствами'}</b>${cloudUser?`<small>${esc(cloudUser.email||cloudUser.displayName||'Google')}</small>`:''}<p data-cloud-status class="${cloudError?'cloud-error':''}" role="status">${esc(cloudError||cloudStatus)}</p></div><button data-cloud="${cloudUser?'account':'login'}" ${!cloudAvailable||cloudSwitching?'disabled':''}>${cloudUser?'Управление':'Войти через Google'}</button></section>`;}
 function renderCloudDialog(){return `<dialog id="cloud-dialog" class="formula-dialog" aria-labelledby="cloud-title"><div class="toolbar"><h2 id="cloud-title">Облачные сохранения</h2><button data-cloud="close" aria-label="Закрыть облачные сохранения">×</button></div><p>${esc(cloudUser?.email||'Вход через Google')}</p><p data-cloud-status class="${cloudError?'cloud-error':''}" role="status">${esc(cloudError||cloudStatus)}</p><div class="cloud-actions"><button data-cloud="sync">Синхронизировать сейчас</button><button data-cloud="import-guest">Добавить персонажей с этого устройства</button><button data-cloud="logout">Выйти из Google</button></div><p class="help-copy">У каждого аккаунта отдельная библиотека. Изменения автоматически отправляются в облако. При конфликте сохраняется отдельная копия. После выхода локальные персонажи аккаунта остаются на этом устройстве для следующего входа.</p></dialog>`;}
 const beforeCloudRender=render;
-render=function(){beforeCloudRender();if(!document.querySelector('#cloud-account-button'))document.querySelector('header>div:last-child').insertAdjacentHTML('beforeend','<button id="cloud-account-button" data-cloud="account" aria-label="Облачные сохранения">☁ Google</button>');if(libraryHome){const library=document.querySelector('.character-library');if(library)library.querySelector('.character-cards').insertAdjacentHTML('beforebegin',renderCloudPanel());}if(cloudDialogOpen){document.querySelector('#view').insertAdjacentHTML('beforeend',renderCloudDialog());document.querySelector('#cloud-dialog').showModal();}updateCloudStatus(cloudStatus,cloudError);};
+render=function(){beforeCloudRender();if(!document.querySelector('#cloud-account-button'))document.querySelector('header>div:last-child').insertAdjacentHTML('beforeend','<button id="cloud-account-button" data-cloud="account" aria-label="Облачные сохранения">☁ Google</button>');if(libraryHome){const library=document.querySelector('.character-library');if(library)library.querySelector('.character-cards').insertAdjacentHTML('beforebegin',renderCloudPanel());}if(cloudDialogOpen){document.querySelector('#view').insertAdjacentHTML('beforeend',renderCloudDialog());document.querySelector('#cloud-dialog').showModal();}if(googleLoginOpen)showGoogleLoginDialog();updateCloudStatus(cloudStatus,cloudError);};
 function scheduleCloudSync(delay=3000){clearTimeout(cloudTimer);if(!cloudUser||cloudSwitching)return;cloudTimer=setTimeout(syncCloud,delay);}
 function firebaseRemote(uid){
  const f=cloudApi.fs,base=['users',uid],ref=(kind,id)=>f.doc(cloudDb,...base,kind,id);
@@ -58,7 +60,7 @@ async function selectCloudAccount(user){
  try{
   await libraryInitialization;
   if(!libraryHome){save();await persistQueue;}if(generation!==cloudGeneration)return;
-  cloudUser=user;libraryHome=true;libraryModal=null;cloudDialogOpen=false;activeCharacterId=null;characterRecords=[];libraryReady=false;
+  cloudUser=user;libraryHome=true;libraryModal=null;cloudDialogOpen=false;googleLoginOpen=false;activeCharacterId=null;characterRecords=[];libraryReady=false;
   conditionEditor=null;conditionDraft=null;woundDialog=null;effectsOpenSource=null;featPickerOpen=false;creationDraft=null;creationToken=null;resetCharacterUi();
   const store=user?new CharacterStore('sacralic-library-google-'+user.uid):guestCharacterStore;
   if(user)store.cloudTracking=user.uid;await store.open();if(generation!==cloudGeneration)return;
@@ -79,20 +81,18 @@ async function importGuestCharacters(){
  }finally{cloudImportBusy=false;}
 }
 function closeCloudDialog(){cloudDialogOpen=false;document.querySelector('#cloud-dialog')?.remove();}
-document.addEventListener('cancel',event=>{if(event.target.id==='cloud-dialog')closeCloudDialog();},true);
+document.addEventListener('cancel',event=>{if(event.target.id==='cloud-dialog')closeCloudDialog();if(event.target.id==='google-login-dialog')closeGoogleLogin();},true);
 document.addEventListener('click',event=>{
  const b=event.target.closest('[data-cloud]');if(!b)return;event.stopImmediatePropagation();const action=b.dataset.cloud;
- if(action==='close'){closeCloudDialog();return;}if(cloudSwitching)return;
+ if(action==='close-google'){closeGoogleLogin();return;}if(action==='close'){closeCloudDialog();return;}if(cloudSwitching)return;
  if(action==='account'&&!cloudUser||action==='login'){
   if(!cloudAvailable){toast(cloudError||'Подключение Google ещё не готово.');return;}
-  updateCloudStatus('Открываем окно Google…');
-  const provider=new cloudApi.auth.GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
-  cloudApi.auth.signInWithPopup(cloudAuth,provider).catch(error=>{updateCloudStatus('Без входа.',cloudErrorMessage(error));toast(cloudErrorMessage(error));});return;
+  googleLoginOpen=true;showGoogleLoginDialog();return;
  }
  if(action==='account'){cloudDialogOpen=true;document.querySelector('#view').insertAdjacentHTML('beforeend',renderCloudDialog());document.querySelector('#cloud-dialog').showModal();return;}
  if(action==='sync'){closeCloudDialog();syncCloud();return;}
  if(action==='import-guest'){closeCloudDialog();importGuestCharacters().then(()=>render()).catch(error=>toast(cloudErrorMessage(error)));return;}
- if(action==='logout'){closeCloudDialog();cloudApi.auth.signOut(cloudAuth).catch(error=>toast(cloudErrorMessage(error)));}
+ if(action==='logout'){closeCloudDialog();window.google?.accounts?.id?.disableAutoSelect();cloudApi.auth.signOut(cloudAuth).catch(error=>toast(cloudErrorMessage(error)));}
 },true);
 window.addEventListener('online',()=>scheduleCloudSync(0));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')scheduleCloudSync(0);});
@@ -107,3 +107,34 @@ async function initializeCloud(){
  }catch(error){updateCloudStatus('Локальные сохранения доступны.',cloudErrorMessage(error));if(libraryHome)render();}
 }
 render();initializeCloud();
+
+// Google returns the ID token to this page; Firebase's cross-origin auth handler is not used.
+function closeGoogleLogin(){googleLoginOpen=false;document.querySelector('#google-login-dialog')?.remove();}
+function loadGoogleIdentity(){
+ if(window.google?.accounts?.id)return Promise.resolve(window.google.accounts.id);
+ if(googleIdentityPromise)return googleIdentityPromise;
+ googleIdentityPromise=new Promise((resolve,reject)=>{
+  const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client?hl=ru';script.async=true;
+  script.onload=()=>{if(window.google?.accounts?.id)resolve(window.google.accounts.id);else{googleIdentityPromise=null;reject(Error('Не удалось загрузить вход Google. Попробуйте ещё раз.'));}};
+  script.onerror=()=>{googleIdentityPromise=null;script.remove();reject(Error('Google недоступен. Проверьте соединение и повторите вход.'));};document.head.append(script);
+ });return googleIdentityPromise;
+}
+async function handleGoogleCredential(response){
+ if(!googleLoginOpen||googleLoginBusy||!cloudAvailable)return;
+ const note=document.querySelector('[data-google-login-status]');
+ if(typeof response?.credential!=='string'||!response.credential){if(note)note.textContent='Google не подтвердил вход. Попробуйте ещё раз.';return;}
+ googleLoginBusy=true;if(note)note.textContent='Подтверждаем вход…';updateCloudStatus('Подтверждаем вход Google…');
+ try{const credential=cloudApi.auth.GoogleAuthProvider.credential(response.credential);await cloudApi.auth.signInWithCredential(cloudAuth,credential);closeGoogleLogin();}
+ catch(error){const message=cloudErrorMessage(error);if(note?.isConnected)note.textContent=message;updateCloudStatus('Без входа.',message);}
+ finally{googleLoginBusy=false;}
+}
+function showGoogleLoginDialog(){
+ if(document.querySelector('#google-login-dialog'))return;
+ document.querySelector('#view').insertAdjacentHTML('beforeend',`<dialog id="google-login-dialog" class="formula-dialog" aria-labelledby="google-login-title"><div class="toolbar"><h2 id="google-login-title">Вход через Google</h2><button data-cloud="close-google" aria-label="Закрыть вход Google">×</button></div><div id="google-identity-button"></div><p data-google-login-status role="status">Загружаем кнопку Google…</p><p class="help-copy">На телефоне открывайте сайт в Chrome или Safari.</p></dialog>`);
+ const dialog=document.querySelector('#google-login-dialog'),host=dialog.querySelector('#google-identity-button');dialog.showModal();
+ loadGoogleIdentity().then(identity=>{
+  if(!googleLoginOpen||host!==document.querySelector('#google-identity-button'))return;
+  if(!googleIdentityInitialized){identity.initialize({client_id:googleOAuthClientId,callback:handleGoogleCredential,ux_mode:'popup',auto_select:false,button_auto_select:false,use_fedcm_for_button:true});googleIdentityInitialized=true;}
+  identity.renderButton(host,{type:'standard',theme:'filled_black',size:'large',text:'signin_with',shape:'rectangular',locale:'ru',width:Math.min(320,Math.max(200,host.clientWidth))});dialog.querySelector('[data-google-login-status]').textContent='Выберите Google-аккаунт для своей библиотеки персонажей.';
+ }).catch(error=>{if(googleLoginOpen&&host===document.querySelector('#google-identity-button'))dialog.querySelector('[data-google-login-status]').textContent=error.message;});
+}

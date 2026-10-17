@@ -46,7 +46,7 @@ const engine=(store,remote,extra={})=>new CloudSyncEngine({store,remote,isCurren
  const fs=require('node:fs'),vm=require('node:vm'),stores=new Map();
  class AccountStore extends Store{constructor(name='guest'){super();if(stores.has(name))return stores.get(name);this.name=name;stores.set(name,this);}async open(){return this;}async images(){return [...this.pictures.values()];}}
  const guest=new AccountStore();await guest.put(character('Guest hero'));
- const element={inert:false,querySelector(){return this;},insertAdjacentHTML(){},classList:{toggle(){}},showModal(){}};
+ const element={inert:false,querySelector(){return this;},insertAdjacentHTML(){},remove(){},isConnected:true,classList:{toggle(){}},showModal(){}};
  const ui={console,TextEncoder,crypto,structuredClone,Date,Blob,CharacterStore:AccountStore,CloudSyncEngine,characterStore:guest,libraryInitialization:Promise.resolve(),persistQueue:Promise.resolve(),libraryHome:true,libraryModal:null,libraryReady:true,libraryBusy:false,characterRecords:[],activeCharacterId:null,conditionEditor:null,conditionDraft:null,woundDialog:null,effectsOpenSource:null,featPickerOpen:false,creationDraft:null,creationToken:null,render(){},resetCharacterUi(){},save(){},refreshPortraitUrls:async()=>{},toast(){},esc:String,document:{querySelector:()=>element,querySelectorAll:()=>[],addEventListener(){}},window:{addEventListener(){}},navigator:{onLine:true},setTimeout:()=>0,clearTimeout(){},setInterval(){}};
  vm.createContext(ui);vm.runInContext(fs.readFileSync(require.resolve('../dist/cloud.js'),'utf8').replace('render();initializeCloud();',''),ui);vm.runInContext('cloudApi={fs:{}}',ui);
  await vm.runInContext('selectCloudAccount({uid:"alice",email:"alice@example.com"})',ui);assert.equal(ui.characterStore.name,'sacralic-library-google-alice');await ui.characterStore.put(character('Alice hero'));
@@ -56,6 +56,14 @@ const engine=(store,remote,extra={})=>new CloudSyncEngine({store,remote,isCurren
  let releaseAlice,enteredAlice;const aliceHeld=new Promise(resolve=>releaseAlice=resolve),aliceEntered=new Promise(resolve=>enteredAlice=resolve),aliceStore=stores.get('sacralic-library-google-alice'),originalList=aliceStore.list.bind(aliceStore);
  aliceStore.list=async()=>{enteredAlice();await aliceHeld;return originalList();};const switchingAlice=vm.runInContext('selectCloudAccount({uid:"alice"})',ui);await aliceEntered;
  await vm.runInContext('selectCloudAccount({uid:"bob"})',ui);releaseAlice();await switchingAlice;assert.equal(ui.characterStore.name,'sacralic-library-google-bob');assert.equal(ui.characterRecords.length,0,'a late response from Alice must not appear in Bob library');assert.equal(element.inert,false);
+ let credentialCalls=0,receivedCredential;ui.window.sessionStorage=new Proxy({},{get(){throw Error('sessionStorage must not be used by Google credential handoff');}});
+ ui.credentialAuth={GoogleAuthProvider:{credential:token=>({idToken:token})},signInWithCredential:async(auth,credential)=>{credentialCalls++;receivedCredential=credential;}};
+ vm.runInContext('cloudApi={auth:credentialAuth};cloudAvailable=true;cloudAuth={};googleLoginOpen=true',ui);
+ ui.googleResponse={credential:'signed-google-id-token'};await vm.runInContext('handleGoogleCredential(googleResponse)',ui);assert.equal(credentialCalls,1);assert.deepEqual(receivedCredential,{idToken:'signed-google-id-token'});assert.equal(vm.runInContext('googleLoginOpen',ui),false);
+ await vm.runInContext('handleGoogleCredential(googleResponse)',ui);assert.equal(credentialCalls,1,'closed sign-in must ignore late identity callbacks');
+ vm.runInContext('googleLoginOpen=true',ui);await vm.runInContext('handleGoogleCredential({})',ui);assert.equal(credentialCalls,1,'missing credentials must not reach Firebase');
+ ui.credentialAuth.signInWithCredential=async()=>{throw Object.assign(Error('network'),{code:'auth/network-request-failed'});};await vm.runInContext('handleGoogleCredential(googleResponse)',ui);assert.equal(vm.runInContext('googleLoginBusy',ui),false);assert.equal(vm.runInContext('googleLoginOpen',ui),true);assert.match(vm.runInContext('cloudError',ui),/Нет связи/);
+ console.log('Passed: direct Google ID-token handoff without Firebase popup/redirect state, late-callback cancellation, invalid credentials and retry after network failure.');
  console.log('Passed: auth account switching keeps guest, Alice and Bob libraries isolated and restores local account cache.');
  console.log('Passed: cloud round trip with portraits, no-op sync, revision conflicts and copies, active editing deferral, concurrent local changes, account isolation, trash, invalid payloads and image chunk bounds.');
 })().catch(error=>{console.error(error);process.exitCode=1;});
