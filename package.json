@@ -1,0 +1,13 @@
+{
+  "name": "sacralic-character-sheet",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Интерактивный лист персонажа Sacralic",
+  "scripts": {
+    "start": "node server.cjs",
+    "check": "node --check server.cjs && node --check dist/app.js && node --check dist/catalog.js && node --check dist/combat.js && node --check dist/experience.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
