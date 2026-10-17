@@ -90,8 +90,8 @@ document.addEventListener('click',event=>{
 },true);
 migrateEffects();render();
 
-function renderFavoriteSkills(){const skills=state.skills.filter(isFavoriteSkill);return skills.length?`<div class="favorite-skill-chances" aria-label="Шансы избранных навыков">${skills.map(s=>`<div><span>${esc(s[0])}</span><strong>${chance(s)===null?'Ошибка':chance(s)+'%'}</strong></div>`).join('')}</div>`:'';}
+function renderFavoriteSkills(){const skills=state.skills.filter(isFavoriteSkill);return skills.length?`<div class="favorite-skill-chances" aria-label="Шансы избранных навыков">${skills.map(s=>metric(s[0],chance(s)===null?'Ошибка':chance(s)+'%')).join('')}</div>`:'';}
 const beforeFavoriteSummary=renderPlaySummary;
-renderPlaySummary=function(){return beforeFavoriteSummary().replace('</div><div class="play-shortcuts">','</div>'+renderFavoriteSkills()+'<div class="play-shortcuts">');};
+renderPlaySummary=function(){return beforeFavoriteSummary().replace('</div><div class="play-shortcuts">',renderFavoriteSkills()+'</div><div class="play-shortcuts">');};
 document.addEventListener('click',event=>{const b=event.target.closest('[data-favorite-skill]');if(!b)return;event.stopImmediatePropagation();toggleFavoriteSkill(+b.dataset.favoriteSkill);save();render();},true);
 render();
