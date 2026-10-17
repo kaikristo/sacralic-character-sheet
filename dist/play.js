@@ -157,7 +157,7 @@ document.addEventListener('click',e=>{
    case 'close-dialog':playDialog=null;editorIndex=-1;break;
    case 'save-editor':try{savePlayEditor();}catch(error){document.querySelector('#play-error').textContent=error.message;return;}break;
    case 'remove-editor':(playDialog==='resource'?p.resources:p.abilities).splice(editorIndex,1);playDialog=null;editorIndex=-1;break;
-   case 'ammo':{const details=state.items[Number(d.index)].details;details.ammoCurrent=String(Math.max(0,Math.min(Number(details.ammoMax)||Infinity,(Number(details.ammoCurrent)||0)+Number(d.delta))));break;}
+   case 'ammo':{const details=state.items[Number(d.index)].details;details.ammoCurrent=String((Number(details.ammoCurrent)||0)+Number(d.delta));break;}
    case 'dying':p.dying=!p.dying;if(p.dying)p.stabilized=false;break;
    case 'death-fail':p.deathFails=Math.min(3,p.deathFails+1);p.dying=true;p.stabilized=false;break;
    case 'death-undo':p.deathFails=Math.max(0,p.deathFails-1);break;
