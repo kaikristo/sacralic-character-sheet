@@ -1,0 +1,7 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    {"collectionGroup": "characters", "fieldPath": "json", "indexes": []},
+    {"collectionGroup": "chunks", "fieldPath": "data", "indexes": []}
+  ]
+}

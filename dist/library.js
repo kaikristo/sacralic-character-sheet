@@ -1,5 +1,5 @@
 /* Character selection and portraits. All persistent writes are queued snapshots. */
-const characterStore=new CharacterStore();
+let characterStore=new CharacterStore();
 let libraryReady=false,libraryHome=true,activeCharacterId=null,characterRecords=[],portraitUrls=new Map(),libraryModal=null,libraryBusy=false,libraryTrash=false,persistQueue=Promise.resolve(),libraryFailure='';
 const beforeLibrarySave=save,beforeLibraryRender=render;
 const movementDefaults={walkFormula:'WALKBASE',runFormula:'RUNBASE',jumpFormula:'2 * RUN + DEX / 10',walkBonus:0,runBonus:0,jumpBonus:0};
@@ -19,7 +19,7 @@ function createBlankCharacter(name,race,player){
 function storageFailure(error){libraryFailure=error?.message||'Не удалось записать библиотеку';const saved=document.querySelector('#saved');if(saved)saved.textContent='⚠ Не сохранено в библиотеке';toast('Ошибка хранилища: '+libraryFailure+'. Экспортируйте JSON.');}
 save=function(){
  if(!libraryReady||libraryHome)return;
- migrateMovement();beforeLibrarySave();const old=characterRecords.find(r=>r.id===activeCharacterId);if(!old)return;
+ migrateMovement();if(!characterStore.cloudTracking)beforeLibrarySave();else syncMaxHp();const old=characterRecords.find(r=>r.id===activeCharacterId);if(!old)return;
  const record={...old,data:structuredClone(state),updatedAt:new Date().toISOString()};characterRecords=characterRecords.map(r=>r.id===record.id?record:r);
  document.querySelector('#saved').textContent='Сохранение…';
  persistQueue=persistQueue.catch(()=>{}).then(()=>characterStore.put(record)).then(()=>{libraryFailure='';document.querySelector('#saved').textContent='✓ Сохранено в библиотеке';});persistQueue.catch(storageFailure);
@@ -100,4 +100,4 @@ async function initializeLibrary(){
  try{await characterStore.open();const migrated=await characterStore.getMeta('legacy-imported');if(!migrated){const now=new Date().toISOString();await characterStore.commit([{id:crypto.randomUUID(),createdAt:now,updatedAt:now,data:structuredClone(state)}],[],[{key:'legacy-imported',value:true}]);}characterRecords=await characterStore.list();await refreshPortraitUrls(await characterStore.images());libraryReady=true;render();}
  catch(error){libraryFailure=error.message;document.querySelector('#view').innerHTML=`<section class="panel"><h2>Не удалось открыть хранилище</h2><p>${esc(error.message)}</p><p>Разрешите локальное хранилище браузера и перезагрузите страницу. Старое сохранение dossier-v1 остаётся на устройстве.</p><button id="legacy-download">Скачать старое сохранение</button></section>`;document.querySelector('#legacy-download').addEventListener('click',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download='character-recovery.json';a.click();});}
 }
-render();initializeLibrary();
+render();const libraryInitialization=initializeLibrary();
