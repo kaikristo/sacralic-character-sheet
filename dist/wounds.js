@@ -69,3 +69,11 @@ document.addEventListener('click',event=>{
 document.addEventListener('toggle',event=>{if(event.target.tagName==='DETAILS'&&!event.target.closest('dialog')){cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(()=>refreshPanelLayout(event.target));}},true);
 window.addEventListener?.('resize',()=>{cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(()=>refreshPanelLayout());});
 render();
+
+// Reuse the native cancel lifecycle so a dismissed dialog stays closed after rendering.
+let backdropPress=null;
+function isDialogBackdrop(event){const dialog=event.target;if(dialog?.tagName!=='DIALOG'||!dialog.open)return false;const r=dialog.getBoundingClientRect();return event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom;}
+function dismissDialogBackdrop(dialog){const cancel=new Event('cancel',{cancelable:true});if(dialog.dispatchEvent(cancel)&&dialog.open)dialog.close();}
+document.addEventListener('pointerdown',event=>{backdropPress=isDialogBackdrop(event)?event.target:null;},true);
+document.addEventListener('pointercancel',()=>{backdropPress=null;},true);
+document.addEventListener('click',event=>{const dialog=backdropPress;backdropPress=null;if(dialog&&event.target===dialog&&isDialogBackdrop(event)){event.preventDefault();event.stopImmediatePropagation();dismissDialogBackdrop(dialog);}},true);

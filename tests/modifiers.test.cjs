@@ -20,3 +20,13 @@ run('gun.details.ammoCurrent="-3";const restored=validateCharacterData(JSON.pars
 assert.ok(run('renderFeatBalances().includes("feat-simple")'));assert.ok(run('!renderFeatBalances().includes("выдано")'));run('damageOpen=true');assert.ok(run('!renderDamageDialog().includes("Броня")'));assert.ok(run('!renderDamageDialog().includes("data-wound-armor")'));
 run('gun.details.actionCost="6"');assert.match(run('renderWeapons()'),/data-tabletop="attack"/);
 console.log('Passed: manual skill level/chance bonuses, scoped conditions and HP preservation, signed ammunition with undo, attack effects and compact presentation.');
+
+run('page=0');assert.ok(!run('renderAvailableAttacks()').includes('data-tabletop="attack"'));assert.match(run('renderWeapons()'),/data-tabletop="attack"/);
+ctx.Event=Event;
+const modal={tagName:'DIALOG',open:true,getBoundingClientRect:()=>({left:20,right:200,top:30,bottom:300}),dispatchEvent(event){assert.equal(event.type,'cancel');this.cancelled=true;return true;},close(){this.open=false;}};
+ctx.testModal=modal;
+assert.equal(run('isDialogBackdrop({target:testModal,clientX:5,clientY:50})'),true);
+assert.equal(run('isDialogBackdrop({target:testModal,clientX:30,clientY:50})'),false);
+run('dismissDialogBackdrop(testModal)');assert.equal(modal.cancelled,true);assert.equal(modal.open,false);
+modal.open=true;modal.dispatchEvent=event=>{event.preventDefault();return false;};run('dismissDialogBackdrop(testModal)');assert.equal(modal.open,true);
+console.log('Passed: overview attack controls hidden, combat execution retained, backdrop bounds and cancellable dismissal.');
