@@ -5,8 +5,8 @@
   "description": "Интерактивный лист персонажа Sacralic",
   "scripts": {
     "start": "node server.cjs",
-    "check": "node --check server.cjs && node --check dist/app.js && node --check dist/catalog.js && node --check dist/combat.js && node --check dist/experience.js && node --check dist/rules-data.js && node --check dist/play.js && node --check dist/storage.js && node --check dist/library.js && node --check dist/effects.js",
-    "test": "node tests/play.test.cjs && node tests/storage.test.cjs && node tests/effects.test.cjs"
+    "check": "node --check server.cjs && node --check dist/app.js && node --check dist/catalog.js && node --check dist/combat.js && node --check dist/experience.js && node --check dist/rules-data.js && node --check dist/play.js && node --check dist/storage.js && node --check dist/library.js && node --check dist/effects.js && node --check dist/workflow.js && node --check dist/tabletop.js",
+    "test": "node tests/play.test.cjs && node tests/storage.test.cjs && node tests/effects.test.cjs && node tests/workflow.test.cjs && node tests/tabletop.test.cjs"
   },
   "engines": {
     "node": ">=18"

@@ -1,0 +1,22 @@
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict'),{webcrypto}=require('node:crypto');
+const root=path.resolve(__dirname,'..'),elements={};
+const element=()=>({value:'',textContent:'',innerHTML:'',dataset:{},style:{},classList:{add(){},remove(){},toggle(){}},addEventListener(){},prepend(){},insertAdjacentHTML(){},showModal(){},querySelector(){return null;}});
+const ctx={structuredClone,console,crypto:webcrypto,Date,Blob,URL,Uint8Array,setTimeout:()=>0,clearTimeout(){},requestAnimationFrame:()=>0,cancelAnimationFrame(){},indexedDB:{open:()=>({})},window:{scrollTo(){},matchMedia:()=>({matches:false})},localStorage:{getItem:()=>null,setItem(){}},document:{body:element(),documentElement:{style:{setProperty(){}}},createElement:element,querySelector:s=>elements[s]??=element(),querySelectorAll:()=>[],addEventListener(){}}};
+vm.createContext(ctx);for(const file of ['combat','experience','catalog','app','rules-data','play','storage','library','effects','workflow','tabletop'])vm.runInContext(fs.readFileSync(path.join(root,'dist',file+'.js'),'utf8'),ctx,{filename:file+'.js'});
+const run=s=>vm.runInContext(s,ctx);run('migrateEffects();');
+
+run('state.info.race="Ноко";state.stats.find(s=>s[1]==="DEX")[2]=10;state.stats.find(s=>s[1]==="CHA")[2]=8;migrateEffects();');
+assert.equal(run('state.stats.find(s=>s[1]==="DEX")[2]'),20);assert.equal(run('statTotal("DEX")'),20);assert.equal(run('statBonus("DEX")'),0);assert.equal(run('state.stats.find(s=>s[1]==="CHA")[2]'),3);
+run('migrateEffects();migrateEffects();');assert.equal(run('statTotal("DEX")'),20);
+run('state.info.race="Человек";migrateEffects();');assert.equal(run('state.stats.find(s=>s[1]==="DEX")[2]'),10);assert.equal(run('state.stats.find(s=>s[1]==="CHA")[2]'),8);assert.equal(run('statCap("DEX")'),25);
+run('state.info.race="Диззри";migrateEffects();');assert.equal(run('statBonus("INT")'),0);assert.equal(run('statTotal("INT")'),15);
+run('state=migrateCharacter(validateCharacterData(JSON.parse(JSON.stringify(state))));migrateEffects();');assert.equal(run('statTotal("INT")'),15);
+run('state.info.race="Человек";migrateEffects();const light=["Стрельба (лёгкое)",5,"Боевые","ACC",defaultFormula,"","sacralic-0"];state.skills=[light];const cz={name:"Пистолет CZ",category:"Оружие",equipped:true,details:{}};');
+assert.equal(run('attackNumbers(cz).cost'),6);assert.equal(run('attackNumbers(cz).baseDamage'),'1d100');assert.equal(run('attackNumbers(cz).mastery'),100);assert.equal(run('attackNumbers(cz).bb'),16);assert.equal(run('attackNumbers(cz).range'),'50');assert.equal(run('attackNumbers(cz).damage'),'1d100 + 1d100 + 100');
+run('light[1]=4;');assert.equal(run('attackNumbers(cz).mastery'),0);run('light[1]=6;');assert.equal(run('attackNumbers(cz).mastery'),200);
+run('const fast=RULE_ENTRIES.find(e=>e.title==="Быстрый стрелок");state.play.pinned.push(fast.id);');assert.equal(run('attackNumbers(cz).cost'),5);
+run('light[1]=10;');assert.equal(run('attackNumbers(cz).cost'),3);
+run('state.effects.sources[fast.id]={enabled:false};');assert.equal(run('attackNumbers(cz).cost'),4);
+run('cz.details.actionCostBonus=-1;');assert.equal(run('attackNumbers(cz).cost'),3);
+run('state.items=[cz];');assert.ok(run('renderAvailableAttacks().includes("Выстрел · Пистолет CZ")'));assert.ok(run('!renderStat(state.stats[0],0).includes("stat-limit")'));run('statEdit=0;');assert.ok(run('renderStatDialog().includes("Максимум:")'));
+console.log('Passed: permanent racial bases and migration, race changes, CZ attack damage/AB/mastery, skill and feat action costs, hidden caps.');

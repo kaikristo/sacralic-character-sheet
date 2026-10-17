@@ -16,7 +16,7 @@ run('reset();state.effects.baseCaps.STR=25;');assert.equal(run('statCap("STR")')
 run('reset();state.info.freeStats=1000;');assert.ok(run('setBaseStat(0,25)'));const bankBeforeLimit=run('state.info.freeStats');assert.equal(run('setBaseStat(0,26)'),false);assert.equal(run('state.info.freeStats'),bankBeforeLimit);
 run('state.stats[0][2]=30;');assert.ok(run('renderStat(state.stats[0],0).includes("выше предела")'));assert.ok(run('setBaseStat(0,29)'));assert.equal(run('setBaseStat(0,30)'),false);
 run('reset();state.info.race="Диззри";state.info.freeStats=1000;state.stats.find(s=>s[1]==="CON")[2]=14;');assert.equal(run('statCap("CON")'),10);assert.equal(run('statCap("INT")'),null);assert.ok(run('setBaseStat(2,15)'));assert.equal(run('setBaseStat(2,16)'),false);
-run('reset();');assert.ok(run('renderStat(state.stats[0],0).includes("Макс. <b>25</b>")'));
+run('reset();');assert.ok(run('renderStat(state.stats[0],0).includes("/ <b>25</b>")'));
 run('state.effects.baseCaps.CON=20;pin("Боец");config("Боец",{style:"STR"});');
 assert.equal(run('statTotal("CON")'),20);assert.equal(run('statCap("CON")'),30);assert.equal(run('state.stats.find(s=>s[1]==="CON")[2]'),20);
 run('reset();state.info.race="Ноко";');assert.equal(run('statTotal("DEX")'),28);assert.equal(run('statTotal("CHA")'),7);
