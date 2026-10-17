@@ -1,6 +1,6 @@
 /* Firebase config identifies the public web client. Access is enforced by firestore.rules. */
 const firebaseConfig={apiKey:'AIzaSyBX33kHjXXCD-MH6dvbnxE_bor1mwV4C3I',authDomain:'ms-character-sheet.firebaseapp.com',projectId:'ms-character-sheet',storageBucket:'ms-character-sheet.firebasestorage.app',messagingSenderId:'137850447236',appId:'1:137850447236:web:139a22ebb1e50c6e86a9d1'};
-let cloudApi=null,cloudAuth=null,cloudDb=null,cloudUser=null,cloudEngine=null,cloudGeneration=0,cloudSwitching=false,cloudBusyEngine=null,cloudDialogOpen=false,cloudTimer=0,cloudStatus='Подключаем Google…',cloudError='',cloudAvailable=false;
+let cloudApi=null,cloudAuth=null,cloudDb=null,cloudUser=null,cloudEngine=null,cloudGeneration=0,cloudSwitching=false,cloudBusyEngine=null,cloudDialogOpen=false,cloudTimer=0,cloudStatus='Подключаем Google…',cloudError='',cloudAvailable=false,cloudImportBusy=false;
 const guestCharacterStore=characterStore;
 function cloudErrorMessage(error){
  const code=error?.code||'';
@@ -45,7 +45,7 @@ async function syncCloud(){
  try{
   await persistQueue;if(generation!==cloudGeneration)return;updateCloudStatus('Синхронизация…');
   const result=await engine.sync();if(generation!==cloudGeneration)return;
-  characterRecords=await characterStore.list();await refreshPortraitUrls(await characterStore.images());
+  const records=await engine.store.list(),images=await engine.store.images();if(generation!==cloudGeneration)return;characterRecords=records;await refreshPortraitUrls(images);
   updateCloudStatus(result?.deferred?'Есть изменения с другого устройства. '+(libraryHome?'Объединяем сохранения…':'Откройте список персонажей для объединения.') :result?.pending?'Отправляем последние изменения…':'✓ Сохранено в Google · '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}));
   if(result?.pending&&(!result.deferred||libraryHome)||result?.deferred&&libraryHome)scheduleCloudSync();
   if(libraryHome&&!libraryModal&&!cloudDialogOpen)render();
@@ -62,19 +62,21 @@ async function selectCloudAccount(user){
   conditionEditor=null;conditionDraft=null;woundDialog=null;effectsOpenSource=null;featPickerOpen=false;creationDraft=null;creationToken=null;resetCharacterUi();
   const store=user?new CharacterStore('sacralic-library-google-'+user.uid):guestCharacterStore;
   if(user)store.cloudTracking=user.uid;await store.open();if(generation!==cloudGeneration)return;
-  characterStore=store;persistQueue=Promise.resolve();characterRecords=await store.list();await refreshPortraitUrls(await store.images());libraryReady=true;
+  const records=await store.list(),images=await store.images();if(generation!==cloudGeneration)return;characterStore=store;persistQueue=Promise.resolve();characterRecords=records;await refreshPortraitUrls(images);libraryReady=true;
   if(user){store.onChanged=()=>scheduleCloudSync();cloudEngine=new CloudSyncEngine({store,remote:firebaseRemote(user.uid),isCurrent:()=>cloudGeneration===generation&&characterStore===store,isEditing:id=>!libraryHome&&activeCharacterId===id,onConflict:()=>toast('Изменения с этого устройства сохранены отдельной копией.')});}
   updateCloudStatus(user?'Готово к синхронизации.':'Без входа. Персонажи сохраняются на этом устройстве.');render();
  }catch(error){updateCloudStatus('Не удалось открыть библиотеку.',cloudErrorMessage(error));}
  finally{if(generation===cloudGeneration){cloudSwitching=false;libraryBusy=false;document.querySelector('#ui-shell').inert=false;updateCloudStatus(cloudStatus,cloudError);if(user)scheduleCloudSync(0);}}
 }
 async function importGuestCharacters(){
+ if(cloudImportBusy)return;cloudImportBusy=true;try{
  if(!cloudUser||cloudSwitching)throw Error('Сначала войдите через Google.');const store=characterStore,generation=cloudGeneration;
  await guestCharacterStore.open();const imported=(await store.getMeta('cloud-imported-guest'))?.value||[],records=(await guestCharacterStore.list()).filter(r=>!r.deletedAt&&!imported.includes(r.id)),images=await guestCharacterStore.images();
  if(generation!==cloudGeneration)return;
  const copies=records.map(r=>({...structuredClone(r),id:crypto.randomUUID(),updatedAt:new Date().toISOString()})),ids=new Set(copies.map(r=>r.data.info.portraitId).filter(Boolean));
  await store.commit(copies,images.filter(i=>ids.has(i.id)),[{key:'cloud-imported-guest',value:[...imported,...records.map(r=>r.id)]}]);
- characterRecords=await store.list();await refreshPortraitUrls(await store.images());toast(copies.length?'Добавлено персонажей: '+copies.length:'Все локальные персонажи уже добавлены.');scheduleCloudSync(0);
+ const currentRecords=await store.list(),currentImages=await store.images();if(generation!==cloudGeneration)return;characterRecords=currentRecords;await refreshPortraitUrls(currentImages);toast(copies.length?'Добавлено персонажей: '+copies.length:'Все локальные персонажи уже добавлены.');scheduleCloudSync(0);
+ }finally{cloudImportBusy=false;}
 }
 function closeCloudDialog(){cloudDialogOpen=false;document.querySelector('#cloud-dialog')?.remove();}
 document.addEventListener('cancel',event=>{if(event.target.id==='cloud-dialog')closeCloudDialog();},true);
