@@ -59,7 +59,7 @@ const beforeWorkflowEffectExpression=effectExpression;
 effectExpression=function(value,spec){return value==='EPMAX'?energyValues().max:beforeWorkflowEffectExpression(value,spec);};
 function psiResistance(){const s=state.skills.find(s=>/пси[ -]?стойк/i.test(s[0]));return s?chance(s):statTotal('INT');}
 const beforeWorkflowSummary=renderPlaySummary;
-renderPlaySummary=function(){const d=derivedPlay(),ep=energyValues();return `<div class="play-summary">${metric('ОД',state.play.ap+' / '+state.play.apMax,'раунд '+state.play.round)}${metric('Уворот',d.dodge+'%','до условий и штрафов')}${metric('Болевой шок',d.shock===null?'Ошибка':d.shock+'%','ваша Стойкость / CON')}${metric('Пси-стойкость',psiResistance()+'%','навык / INT')}${metric('Энергия',ep.max,'Σ пси-навыков '+ep.sum+' × INT '+ep.int)}</div><div class="play-shortcuts"><button data-page="4">Открыть бой →</button><button data-play="reference">Правила под рукой</button></div>`;};
+renderPlaySummary=function(){const d=derivedPlay(),ep=energyValues();return `<div class="play-summary">${metric('ОД',state.play.ap+' / '+state.play.apMax,'раунд '+state.play.round)}${metric('Уворот',d.dodge+'%','до условий и штрафов')}${metric('Стойкость',d.shock===null?'Ошибка':d.shock+'%','ваша Стойкость / CON')}${metric('Пси-стойкость',psiResistance()+'%','навык / INT')}${metric('Энергия',ep.max,'Σ пси-навыков '+ep.sum+' × INT '+ep.int)}</div><div class="play-shortcuts"><button data-page="4">Открыть бой →</button><button data-play="reference">Правила под рукой</button></div>`;};
 const beforeWorkflowAction=renderActionPanel;
 renderActionPanel=function(){return beforeWorkflowAction().replace(metric('Инициатива',derivedPlay().initiative),'');};
 function cumulativeCombatFeatures(skill){
