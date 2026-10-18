@@ -31,5 +31,53 @@ service cloud.firestore {
           && request.resource.data.data.size() <= 150000;
       }
     }
+    function battleHost(room) {
+      return request.auth != null && get(/databases/$(database)/documents/battleRooms/$(room)).data.ownerUid == request.auth.uid;
+    }
+    function battleMember(room) {
+      return request.auth != null && exists(/databases/$(database)/documents/battleRooms/$(room)/members/$(request.auth.uid));
+    }
+    match /battleRooms/{room} {
+      // Knowing the random room code acts as the invitation. Room enumeration is forbidden.
+      allow get: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['version','ownerUid','phase','revision','stateJson','createdAt','hostSeenAt'])
+        && request.resource.data.version == 1 && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.phase == 'lobby' && request.resource.data.revision == 1
+        && request.resource.data.stateJson is string && request.resource.data.stateJson.size() <= 350000
+        && request.resource.data.createdAt == request.time && request.resource.data.hostSeenAt == request.time;
+      allow update: if request.auth != null && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.hostSeenAt == request.time
+        && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hostSeenAt'])
+          || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stateJson','revision','phase','hostSeenAt'])
+            && request.resource.data.revision == resource.data.revision + 1
+            && request.resource.data.stateJson is string && request.resource.data.stateJson.size() <= 350000
+            && request.resource.data.phase in ['lobby','battle','paused','finished']));
+      match /members/{uid} {
+        allow read: if battleHost(room) || battleMember(room) || (request.auth != null && request.auth.uid == uid);
+        allow create: if request.auth != null && request.auth.uid == uid
+          && get(/databases/$(database)/documents/battleRooms/$(room)).data.phase == 'lobby'
+          && request.resource.data.keys().hasOnly(['displayName','teamName','joinedAt'])
+          && request.resource.data.displayName is string && request.resource.data.displayName.size() <= 50
+          && request.resource.data.teamName is string && request.resource.data.teamName.size() > 0 && request.resource.data.teamName.size() <= 50
+          && request.resource.data.joinedAt == request.time;
+      }
+      match /commands/{id} {
+        allow read: if battleHost(room) || (request.auth != null && resource.data.uid == request.auth.uid);
+        allow create: if battleMember(room)
+          && request.resource.data.keys().hasOnly(['uid','kind','payloadJson','status','createdAt'])
+          && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'pending'
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.payloadJson is string && request.resource.data.payloadJson.size() <= 20000
+          && (request.resource.data.kind in ['addUnit','removeUnit','deploy','move','attack','action','endTurn']
+            || (battleHost(room) && request.resource.data.kind in ['team','location','terrain','start','pause','undo','hp']));
+        allow update: if battleHost(room) && resource.data.status == 'pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','result','resolvedAt'])
+          && request.resource.data.status in ['applied','rejected']
+          && request.resource.data.result is string && request.resource.data.result.size() <= 500
+          && request.resource.data.resolvedAt == request.time;
+      }
+    }
   }
 }
