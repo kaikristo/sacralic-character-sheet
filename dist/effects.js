@@ -29,8 +29,8 @@ function effectSkillMatches(skill,scope){
  const patterns={melee:/ближний бой/,ranged:/стрельба/,stealth:/скрытност/,observation:/наблюдатель/,conversation:/разговор|убежден/,knowledge:/знани/,repair:/ремонт/,psi:/пси|пирокин|материализац|ясновид|шаманизм/,mental:/пси|мист|разум|дух/,art:/искусств|исполнен|музык/};
  return !scope||scope==='all'||scope.startsWith('id:')&&skillIdentity(skill)===scope.slice(3)||scope.startsWith('attribute:')&&skill[3]===scope.slice(10)||!!patterns[scope]?.test(name);
 }
-function effectsForSource(source){
- const cfg=sourceConfig(source.id),effects=[],choices=[],conditions=[];let n=0;
+function effectsForSource(source,configuration){
+ const cfg=configuration||sourceConfig(source.id),effects=[],choices=[],conditions=[];let n=0;
  const count=Number.isSafeInteger(cfg.count)?Math.max(1,Math.min(50,cfg.count)):1;
  const level=Number.isSafeInteger(cfg.level)?Math.max(1,cfg.level):state.info.level;
  const add=(target,value,label,options={})=>effects.push({id:source.id+'/'+(options.key||effectNorm(target.split(':')[0]+' '+label)),sourceId:source.id,source:source.title,url:source.url,target,value,label,op:'add',...options,sourceEnabled:cfg.enabled!==false});
@@ -219,7 +219,7 @@ render=function(){migrateEffects();refreshEffectAp();beforeEffectsRender();if(li
 };
 playPages.splice(playPages.length-1,0,['Бонусы',8]);
 document.addEventListener('cancel',e=>{if(e.target.id==='effect-source-dialog')effectsOpenSource=null;},true);
-document.addEventListener('change',e=>{if(e.target.closest('#effect-source-dialog')||e.target.closest('.effects-page'))e.stopImmediatePropagation();},true);
+document.addEventListener('change',e=>{if(e.target.closest('#effect-source-dialog')||e.target.closest('.effects-page')){if(e.target.id==='effect-count'&&typeof refreshAbilityPickEditor==='function')refreshAbilityPickEditor(Number(e.target.value));e.stopImmediatePropagation();}},true);
 document.addEventListener('click',e=>{
  const button=e.target.closest('[data-effect-action],[data-effect-source],[data-effect-remove],[data-effect-custom-remove]');if(!button)return;e.stopImmediatePropagation();const d=button.dataset;
  try{

@@ -11,9 +11,9 @@ function tacticalNumber(value,fallback){const n=Number.parseFloat(value);return 
 function tacticalSnapshot(record){
  const previous=state;
  try{
-  prepareCharacter(record.data);migrateEffects();refreshEffectAp();syncMaxHp();const movement=movementValues();
+  prepareCharacter(record.data);if(state.play.rules){state.play.rules.stance=null;state.play.rules.flurry=false;}migrateEffects();refreshEffectAp();syncMaxHp();const movement=movementValues();
   const attacks=state.items.filter(i=>i.category==='Оружие'&&i.equipped).slice(0,8).map(item=>{const a=attackNumbers(item),ammo=attackAmmo(item);return {name:item.name,cost:Math.max(1,a.cost||6),chance:a.chance??50,damage:a.damage,bb:a.bb??0,range:Math.max(1,tacticalNumber(a.range,1)),ammo:ammo.cost?ammo.current:null,ammoCost:ammo.cost};});
-  return TacticalBattle.sanitizeUnit({name:state.info.name,sourceId:record.id,hpMax:state.info.maxhp,hp:state.info.hp,apMax:Math.max(1,state.play.apMax),walk:movement.walk||1,run:movement.run||2,jump:movement.jump||0,jumpCost:movement.jumpCost||2,reaction:statTotal('RTC'),armor:state.zones[1].armor||0,attacks});
+  return TacticalBattle.sanitizeUnit({name:state.info.name,sourceId:record.id,hpMax:state.info.maxhp,hp:state.info.hp,apMax:Math.max(1,state.play.apMax),walk:movement.walk||1,run:movement.run||2,jump:movement.jump||0,jumpCost:movement.jumpCost||2,reaction:derivedPlay().initiative,armor:resolveEffectTarget(state.zones[1].armor||0,'armor').value,firstTurn:typeof abilitySource==='function'&&!!abilitySource('Первый ход'),attacks});
  }finally{state=previous;applyUiScales();}
 }
 function tacticalDefaultUnit(){return {name:'Новый боец',hpMax:100,hp:100,apMax:10,walk:1,run:2,jump:4,jumpCost:2,reaction:10,armor:0,attacks:[{name:'Атака',cost:6,chance:50,damage:'1d100',bb:0,range:6,ammo:12,ammoCost:1}]};}

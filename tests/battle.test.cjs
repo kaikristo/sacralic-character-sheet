@@ -5,6 +5,7 @@ const fighter=(name='Fighter')=>({name,hpMax:100,hp:100,apMax:10,walk:1,run:2,ju
 const cmd=(b,kind,payload={},uid='host',random=()=>0)=>B.apply(b,{kind,payload},uid,'host',random);
 function setup(){let b=B.create('host','Alpha','arena');b=cmd(b,'team',{uid:'bob',name:'Bravo'});b=cmd(b,'addUnit',{teamId:b.teams[0].id,unit:fighter('Alice')});b=cmd(b,'addUnit',{teamId:b.teams[1].id,unit:{...fighter('Bob'),reaction:10}},'bob');b=cmd(b,'deploy',{unitId:b.units[0].id,x:1,y:1});b=cmd(b,'deploy',{unitId:b.units[1].id,x:5,y:1},'bob');return b;}
 let lobby=setup(),b=cmd(lobby,'start'),a=b.units[0],target=b.units[1];assert.equal(B.activeTeam(b).name,'Alpha');
+let priority=setup();priority.units[1].firstTurn=true;assert.equal(B.activeTeam(cmd(priority,'start')).ownerUid,'bob');priority.units[0].firstTurn=true;assert.equal(B.activeTeam(cmd(priority,'start')).ownerUid,'host');
 assert.throws(()=>cmd(lobby,'location',{key:'forest'},'bob'),/ведущему/);assert.throws(()=>cmd(lobby,'addUnit',{teamId:lobby.teams[0].id,unit:fighter()},'bob'),/свою/);assert.throws(()=>cmd(lobby,'deploy',{unitId:lobby.units[0].id,x:3,y:3},'bob'),/доступа/);
 assert.throws(()=>cmd(b,'move',{unitId:a.id,x:2,y:1,mode:'walk'},'bob'),/другой/);
 let moved=cmd(b,'move',{unitId:a.id,x:2,y:2,mode:'walk'});assert.equal(moved.units[0].ap,9);assert.equal(b.units[0].x,1,'input state is immutable');moved=cmd(moved,'undo');assert.equal(moved.units[0].x,1);assert.equal(moved.units[0].ap,10);
