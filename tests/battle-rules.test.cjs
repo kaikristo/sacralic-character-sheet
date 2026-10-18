@@ -32,6 +32,8 @@ Object.defineProperty(navigator,'onLine',{value:true,configurable:true});
   assert.equal((await send(playerClient,'addUnit',{teamId:states.alice.teams.find(t=>t.ownerUid==='alice').id,unit:fighter('Alice fighter',10)})).status,'applied');
   await waitFor(()=>states.host.units.length===2);assert.equal((await send(hostClient,'start')).status,'applied');await waitFor(()=>states.alice.phase==='battle');
   const hostUnit=states.host.units.find(u=>u.name==='Host fighter'),aliceUnit=states.host.units.find(u=>u.name==='Alice fighter');
+  assert.equal((await send(playerClient,'action',{action:'appearance',unitId:aliceUnit.id,spriteId:'mercenary-8',facing:4})).status,'applied');await waitFor(()=>states.host.units.find(u=>u.id===aliceUnit.id).spriteId==='mercenary-8');assert.equal(states.host.units.find(u=>u.id===aliceUnit.id).facing,4);assert.equal(states.host.units.find(u=>u.id===aliceUnit.id).ap,10);
+  assert.equal((await send(playerClient,'action',{action:'appearance',unitId:hostUnit.id,spriteId:'mercenary-1',facing:0})).status,'rejected');
   assert.equal((await send(playerClient,'move',{unitId:hostUnit.id,x:3,y:3,mode:'walk'})).status,'rejected');
   assert.equal((await send(hostClient,'attack',{unitId:hostUnit.id,targetId:aliceUnit.id,attackIndex:0})).status,'applied');
   await waitFor(()=>states.alice.units.find(u=>u.id===aliceUnit.id).hp===90);assert.equal(states.alice.units.find(u=>u.id===hostUnit.id).ap,6);assert.equal(states.alice.units.find(u=>u.id===hostUnit.id).attacks[0].ammo,4);

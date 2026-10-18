@@ -23,6 +23,18 @@ assert.equal(B.dice('2d6 + 10 - 1',()=>0),11);assert.throws(()=>B.dice('alert(1)
 const maps=Object.keys(B.locations);for(const key of maps){const map=B.create('host','Team',key);B.validate(map);assert.equal(map.map.tiles.length,map.map.w*map.map.h);}
 const unsafe=structuredClone(b);unsafe.units[0].id='" onclick="alert(1)';assert.throws(()=>B.validate(unsafe),/ID/);assert.throws(()=>B.validate({...b,map:{...b.map,key:'" onclick="alert(1)'}}),/локация/);
 
+// Cosmetic commands reuse the owner-validated action channel, with no AP cost.
+assert.equal(B.sanitizeUnit(fighter()).spriteId,null);assert.equal(B.sanitizeUnit(fighter()).facing,0);assert.equal(B.sprites.length,8);
+for(const sprite of B.sprites)assert.equal(B.sanitizeUnit({...fighter(),spriteId:sprite.id,facing:7}).spriteId,sprite.id);
+assert.throws(()=>B.sanitizeUnit({...fighter(),spriteId:'https://bad.example/token.png'}),/спрайт/);assert.throws(()=>B.sanitizeUnit({...fighter(),facing:8}),/направление/);
+let styled=cmd(b,'action',{action:'appearance',unitId:target.id,spriteId:'mercenary-8',facing:4},'bob');assert.equal(styled.units[1].spriteId,'mercenary-8');assert.equal(styled.units[1].facing,4);assert.equal(styled.units[1].ap,10);assert.equal(b.units[1].spriteId,null);
+assert.throws(()=>cmd(b,'action',{action:'appearance',unitId:a.id,spriteId:'mercenary-2'},'bob'),/доступа/);
+assert.throws(()=>cmd(b,'action',{action:'appearance',unitId:a.id,spriteId:'bad'}),/спрайт/);
+assert.equal(cmd(styled,'undo').units[1].spriteId,null);assert.equal(cmd(lobby,'action',{action:'appearance',unitId:a.id,spriteId:'mercenary-1'}).phase,'lobby');
+for(const [x,y,facing] of [[1,2,0],[0,2,1],[0,1,2],[0,0,3],[1,0,4],[2,0,5],[2,1,6],[2,2,7]]){const result=cmd(b,'move',{unitId:a.id,x,y,mode:'walk'});assert.equal(result.units[0].facing,facing);}
+assert.equal(cmd(b,'attack',{unitId:a.id,targetId:target.id,attackIndex:0}).units[0].facing,6);
+console.log('Passed: all eight sprites, legacy defaults, validated appearance updates, own-team permissions, no AP charge, all eight facing directions and undo.');
+
 // Host protocol: a command receipt and the battle revision commit together; duplicate delivery is harmless.
 const docs=new Map(),roomId='ABCDEFGH',roomPath='battleRooms/'+roomId,requestPath=roomPath+'/commands/request';
 const snapshot=ref=>({exists:()=>docs.has(ref.path),data:()=>structuredClone(docs.get(ref.path))});

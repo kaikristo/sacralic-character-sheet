@@ -1,6 +1,9 @@
 /* Deterministic battle rules. Online commands are applied by the room host. */
 const TacticalBattle=(()=>{
  const colors=['#82c9ac','#e7897e','#dfbf78','#8eb8e8','#c499db','#d79fca','#a2be74','#82cbd0'];
+ const sprites=['Разведчик','Снайпер','Штурмовик','Оперативник','Пси-стрелок','Пулемётчик','Боец с молотом','Мечник'].map((name,i)=>({id:'mercenary-'+(i+1),name}));
+ function appearance(input){const spriteId=input.spriteId??null;if(spriteId!==null&&!sprites.some(s=>s.id===spriteId))throw Error('Неизвестный спрайт.');return {spriteId,facing:integer(input.facing??0,0,7,'направление')};}
+ function facingTo(a,b){return (Math.round(Math.atan2(a.x-b.x,b.y-a.y)*4/Math.PI)+8)%8;}
  const locations={
   ruins:{name:'Заброшенный квартал',w:14,h:10,rows:['..............','...###...##...','...#.......c..','...#...~~.....','.......~~.....','..cc..........','.....###..#...','..~..#....#...','..~.......#...','..............']},
   forest:{name:'Лесная переправа',w:14,h:10,rows:['..............','..#...~~..#...','......~~......','..c#..~~..#...','......~~......','..............','...#..~~.c....','......~~...#..','..#...~~......','..............']},
@@ -25,7 +28,7 @@ const TacticalBattle=(()=>{
  }
  function sanitizeUnit(input){
   const u={name:text(input.name,80),hpMax:integer(input.hpMax,1,10000000,'максимальные HP'),apMax:integer(input.apMax,1,100,'ОД'),walk:number(input.walk,.1,50,'шаг'),run:number(input.run,.1,100,'бег'),jump:number(input.jump,0,100,'прыжок'),jumpCost:integer(input.jumpCost??2,1,100,'ОД прыжка'),reaction:number(input.reaction,0,10000,'реакция'),armor:number(input.armor??0,0,10000,'броня'),sourceId:typeof input.sourceId==='string'?input.sourceId.slice(0,180):'',attacks:[]};
-  u.hp=integer(input.hp??u.hpMax,0,u.hpMax,'HP');u.ap=integer(input.ap??u.apMax,0,u.apMax,'текущие ОД');u.posture=input.posture==='prone'?'prone':'standing';u.firstTurn=input.firstTurn===true;
+  Object.assign(u,appearance(input));u.hp=integer(input.hp??u.hpMax,0,u.hpMax,'HP');u.ap=integer(input.ap??u.apMax,0,u.apMax,'текущие ОД');u.posture=input.posture==='prone'?'prone':'standing';u.firstTurn=input.firstTurn===true;
   if(!Array.isArray(input.attacks)||input.attacks.length>8)throw Error('У бойца должно быть не более 8 атак.');
   u.attacks=input.attacks.map(a=>({name:text(a.name,80),cost:integer(a.cost,1,100,'ОД атаки'),chance:number(a.chance,0,1000,'шанс'),damage:text(a.damage,120),bb:number(a.bb??0,0,10000,'ББ'),range:number(a.range,1,10000,'дальность'),ammo:a.ammo===null||a.ammo===undefined?null:integer(a.ammo,-1000000,1000000,'боезапас'),ammoCost:integer(a.ammoCost??0,0,1000,'расход патронов')}));return u;
  }
@@ -69,16 +72,17 @@ const TacticalBattle=(()=>{
   if(command.kind==='undo'){requireHost();const h=b.history.pop();if(!h)throw Error('Нет действий для отмены.');for(const old of h.units){const index=b.units.findIndex(u=>u.id===old.id);if(index>=0)b.units[index]=old;}Object.assign(b,{phase:h.phase,round:h.round,turnIndex:h.turnIndex,winner:h.winner});addLog(b,'Ведущий отменил последнее действие.');return b;}
   if(command.kind==='hp'){requireHost();const target=b.units.find(u=>u.id===p.unitId);if(!target)throw Error('Боец не найден.');remember(b,[target.id]);target.hp=integer(p.value,0,target.hpMax,'HP');addLog(b,'Ведущий: '+target.name+' → '+target.hp+' HP.');return b;}
   const unit=b.units.find(u=>u.id===p.unitId);
+  if(command.kind==='action'&&p.action==='appearance'){if(!unit||!owns(b,uid,unit,ownerUid))throw Error('Нет доступа к бойцу.');const next=appearance(p);remember(b,[unit.id]);Object.assign(unit,next);return b;}
   if(command.kind==='removeUnit'){lobby();if(!unit||!owns(b,uid,unit,ownerUid))throw Error('Нет доступа к бойцу.');b.units=b.units.filter(u=>u.id!==unit.id);b.history=[];return b;}
   if(command.kind==='deploy'){lobby();if(!unit||!owns(b,uid,unit,ownerUid))throw Error('Нет доступа к бойцу.');integer(p.x,0,b.map.w-1,'X');integer(p.y,0,b.map.h-1,'Y');if(tile(b,p.x,p.y)==='#'||occupied(b,p.x,p.y,unit.id))throw Error('Клетка занята или непроходима.');unit.x=p.x;unit.y=p.y;return b;}
   if(b.phase!=='battle')throw Error(b.phase==='paused'?'Бой на паузе.':'Сначала начните бой.');const team=activeTeam(b);
   if(!team||!host&&team.ownerUid!==uid)throw Error('Сейчас ход другой команды.');
   if(command.kind==='endTurn'){remember(b,b.units.map(u=>u.id));const living=livingTeams(b);if(living.length<=1){b.phase='finished';b.winner=living[0]?.id||null;return b;}let next=b.turnIndex;do{next++;if(next>=b.order.length){next=0;b.round++;b.units.forEach(u=>u.ap=u.hp>0?u.apMax:0);}}while(!living.some(t=>t.id===b.order[next]));b.turnIndex=next;addLog(b,'Раунд '+b.round+'. Ход команды «'+activeTeam(b).name+'».');return b;}
   if(!unit||unit.teamId!==team.id||!owns(b,uid,unit,ownerUid)||unit.hp<=0)throw Error('Выберите доступного бойца текущей команды.');
-  if(command.kind==='move'){const move=movement(b,unit,p.x,p.y,p.mode);if(move.cost>unit.ap)throw Error('Недостаточно ОД: нужно '+move.cost+'.');remember(b,[unit.id]);Object.assign(unit,{x:p.x,y:p.y,ap:unit.ap-move.cost});addLog(b,unit.name+': '+(p.mode==='run'?'бег':p.mode==='jump'?'прыжок':'шаг')+' → '+(p.x+1)+':'+(p.y+1)+' · '+move.cost+' ОД.');return b;}
+  if(command.kind==='move'){const move=movement(b,unit,p.x,p.y,p.mode);if(move.cost>unit.ap)throw Error('Недостаточно ОД: нужно '+move.cost+'.');remember(b,[unit.id]);Object.assign(unit,{facing:facingTo(unit,p),x:p.x,y:p.y,ap:unit.ap-move.cost});addLog(b,unit.name+': '+(p.mode==='run'?'бег':p.mode==='jump'?'прыжок':'шаг')+' → '+(p.x+1)+':'+(p.y+1)+' · '+move.cost+' ОД.');return b;}
   if(command.kind==='attack'){
    const target=b.units.find(u=>u.id===p.targetId),attack=unit.attacks[integer(p.attackIndex,0,7,'атака')];if(!target||target.hp<=0||target.teamId===unit.teamId||!attack)throw Error('Выберите противника и атаку.');if(attack.cost>unit.ap)throw Error('Недостаточно ОД.');if(distance(unit,target)>attack.range)throw Error('Цель вне дальности.');if(!lineOfSight(b,unit,target))throw Error('Линия огня перекрыта.');
-   dice(attack.damage,()=>0);remember(b,[unit.id,target.id]);unit.ap-=attack.cost;if(attack.ammo!==null)attack.ammo-=attack.ammoCost;
+   dice(attack.damage,()=>0);remember(b,[unit.id,target.id]);unit.facing=facingTo(unit,target);unit.ap-=attack.cost;if(attack.ammo!==null)attack.ammo-=attack.ammoCost;
    const roll=1+Math.floor(number(random(),0,.9999999999999999,'бросок')*100),chance=Math.max(0,Math.min(100,attack.chance-(tile(b,target.x,target.y)==='c'?20:0))),hit=roll<=chance;let damage=0;
    if(hit){const raw=dice(attack.damage,random),absorption=Math.max(0,Math.min(100,(target.armor-attack.bb)*10));damage=Math.ceil(raw*(100-absorption)/100);target.hp=Math.max(0,target.hp-damage);}
    addLog(b,unit.name+' → '+target.name+' · '+attack.name+': d100 '+roll+'/'+chance+' · '+(hit?damage+' урона':'промах')+' · '+attack.cost+' ОД.');
@@ -87,6 +91,6 @@ const TacticalBattle=(()=>{
   if(command.kind==='action'){const actions={stand:{cost:4,name:'Встать',posture:'standing'},prone:{cost:1,name:'Лечь',posture:'prone'}},action=actions[p.action];if(!action)throw Error('Неизвестное действие.');if(unit.ap<action.cost)throw Error('Недостаточно ОД.');remember(b,[unit.id]);unit.ap-=action.cost;unit.posture=action.posture;addLog(b,unit.name+': '+action.name+' · '+action.cost+' ОД.');return b;}
   throw Error('Неизвестная команда.');
  }
- return {colors,locations,create,validate,sanitizeUnit,tile,occupied,distance,paths,movement,lineOfSight,dice,activeTeam,owns,apply};
+ return {colors,sprites,locations,create,validate,sanitizeUnit,tile,occupied,distance,paths,movement,lineOfSight,dice,activeTeam,owns,apply};
 })();
 if(typeof module!=='undefined')module.exports=TacticalBattle;
