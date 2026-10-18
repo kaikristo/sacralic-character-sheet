@@ -37,9 +37,9 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
       - name: Install isolated emulator test tools
-        run: npm install --prefix .openai/battle-rules --no-audit --no-fund firebase-tools@14.22.0 @firebase/rules-unit-testing@6.0.0 firebase@13.0.0
+        run: npm install --prefix .openai/battle-rules --no-audit --no-fund firebase-tools@15.34.0 @firebase/rules-unit-testing@6.0.0 firebase@13.0.0
       - name: Check room permissions and player synchronization
         run: node .openai/battle-rules/node_modules/firebase-tools/lib/bin/firebase.js emulators:exec --only firestore --project demo-sacralic-battles --config firebase.emulators.json "node tests/battle-rules.test.cjs"
 

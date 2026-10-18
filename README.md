@@ -193,9 +193,9 @@ HP находятся над силуэтом: нажатие на текущи�
 
 `npm test` проверяет движок боя и обработку повторных запросов с подменяемым хранилищем. Дополнительный `tests/battle-rules.test.cjs` использует настоящий Firestore Emulator: проверяет правила доступа, отдельные команды двух клиентов, синхронизацию HP/ОД/патронов и отклонение чужих действий. Workflow Pages запускает эти проверки в Linux перед публикацией; тесты используют только проект `demo-sacralic-battles`, без доступа к рабочей базе.
 
-Локальный запуск интеграционных тестов (Node 22 и Java 17):
+Локальный запуск интеграционных тестов (Node 22 и Java 21):
 
 ```powershell
-npm install --prefix .openai/battle-rules --no-audit --no-fund firebase-tools@14.22.0 @firebase/rules-unit-testing@6.0.0 firebase@13.0.0
+npm install --prefix .openai/battle-rules --no-audit --no-fund firebase-tools@15.34.0 @firebase/rules-unit-testing@6.0.0 firebase@13.0.0
 node .openai/battle-rules/node_modules/firebase-tools/lib/bin/firebase.js emulators:exec --only firestore --project demo-sacralic-battles --config firebase.emulators.json "node tests/battle-rules.test.cjs"
 ```
