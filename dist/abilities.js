@@ -106,7 +106,7 @@ function abilityState(){return state.play.rules;}
 function migrateAbilityState(){
  const p=state.play;if(!p.rules||typeof p.rules!=='object'||Array.isArray(p.rules))p.rules={};const r=p.rules;
  for(const key of ['pointLedger','legacyGrants','uses'])if(!r[key]||typeof r[key]!=='object'||Array.isArray(r[key]))r[key]={};
- if(!r.grantsMigrated){for(const source of selectedEffectSources())if(POINT_FEATS[source.title]&&sourceConfig(source.id).enabled!==false){const count=Math.max(1,Math.min(50,sourceConfig(source.id).count||1));if(!Number.isSafeInteger(r.pointLedger[source.id])){r.legacyGrants[source.id]=count;r.pointLedger[source.id]=0;}}r.grantsMigrated=true;}
+ if(!r.grantsMigrated){for(const source of selectedEffectSources())if(POINT_FEATS[source.title]){const count=Math.max(1,Math.min(50,sourceConfig(source.id).count||1));if(!Number.isSafeInteger(r.pointLedger[source.id])){r.legacyGrants[source.id]=count;r.pointLedger[source.id]=0;}}r.grantsMigrated=true;}
  for(const [key,n] of Object.entries(r.uses))if(!Number.isSafeInteger(n)||n<0)delete r.uses[key];
  if(!Number.isSafeInteger(r.day)||r.day<1)r.day=1;if(!Number.isSafeInteger(r.conversation))r.conversation=1;if(!Number.isSafeInteger(r.quest))r.quest=1;
  if(!Number.isFinite(r.epSpent)||r.epSpent<0)r.epSpent=0;
@@ -126,9 +126,9 @@ function migrateAbilityState(){
 function syncFeatGrants(){
  const r=abilityState();for(const [name,[bank,amount]] of Object.entries(POINT_FEATS)){
   const source=RULE_ENTRIES.find(e=>e.title===name&&ABILITY_CATEGORIES.includes(e.category));if(!source)continue;
-  const count=state.play.pinned.includes(source.id)&&sourceConfig(source.id).enabled!==false?Math.max(1,sourceConfig(source.id).count||1):0;
-  const pending=Number.isSafeInteger(r.legacyGrants[source.id])?Math.max(0,Math.min(count,r.legacyGrants[source.id])):0;if(pending)r.legacyGrants[source.id]=pending;else delete r.legacyGrants[source.id];
-  const target=count-pending,prior=Number.isSafeInteger(r.pointLedger[source.id])?r.pointLedger[source.id]:0,delta=(target-prior)*amount;
+  const selected=state.play.pinned.includes(source.id)?Math.max(1,Math.min(50,sourceConfig(source.id).count||1)):0;
+  const pending=Number.isSafeInteger(r.legacyGrants[source.id])?Math.max(0,Math.min(selected,r.legacyGrants[source.id])):0;if(pending)r.legacyGrants[source.id]=pending;else delete r.legacyGrants[source.id];
+  const target=sourceConfig(source.id).enabled!==false?selected-pending:0,prior=Number.isSafeInteger(r.pointLedger[source.id])?r.pointLedger[source.id]:0,delta=(target-prior)*amount;
   if(Number.isSafeInteger(state.info[bank]+delta)){state.info[bank]+=delta;r.pointLedger[source.id]=target;}
  }
 }
