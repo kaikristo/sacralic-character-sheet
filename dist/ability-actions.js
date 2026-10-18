@@ -74,7 +74,7 @@ function useAbility(id,index,options={}){
  if(action.id==='rumor')text='Слухи: '+roll+' / '+statTotal('CHA')+' — '+(roll<=statTotal('CHA')?'успех; сведения даёт ведущий':'неудача');
  if(action.id==='song')text='Песня: 25 / '+chance(skill)+' — '+(25<=chance(skill)?'успех':'неудача');
  if(action.id==='hack')text='Безопасный взлом: '+roll+' / '+L/2+' — '+(roll<=L/2?'успех':'неудача')+'; без критических последствий и подавления.';
- if(action.id==='counter'){const target=chance(skill)+resolveEffectTarget(0,'counterChance',{skill}).value;text='Контрудар: '+roll+' / '+target+' — '+(roll<=target?'критический успех, показатель 1':'неудача');}
+ if(action.id==='counter'){const target=value+resolveEffectTarget(0,'counterChance',{skill}).value;text='Контрудар: '+roll+' / '+target+' — '+(roll<=target?'критический успех, показатель 1':'неудача');}
  if(action.id==='repair'){const hit=roll<=chance(skill);text='Экстренный ремонт: '+roll+' / '+chance(skill)+' — '+(hit?'работает '+Math.floor(L/2)+' раундов':'неудача')+'; повторный ремонт этого механизма запрещён.';}
  if(attack){if(ammo.cost){item.ammoIdentity??=crypto.randomUUID();state.play.history.at(-1).ammunition={id:item.ammoIdentity,hadCurrent:Object.hasOwn(item.details,'ammoCurrent'),current:item.details.ammoCurrent};item.details.ammoCurrent=String(ammo.current-ammo.cost*(action.id==='burst'?2:1));}const hit=roll<=attack.chance;
   if(action.id==='charge'&&hit){r.tempHp=(r.tempHp||0)+statTotal('CON')*value;r.tempHpRound=state.play.round;}
