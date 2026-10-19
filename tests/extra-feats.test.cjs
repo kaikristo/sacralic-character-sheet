@@ -1,0 +1,23 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');const {run}=require('./abilities.test.cjs');
+for(const file of ['psi','psi-cards','extra-feats'])run(fs.readFileSync(path.resolve(__dirname,'../dist/'+file+'.js'),'utf8'));
+run('resetAudit();migratePsiCards();migrateExtraFeats();var mind=PSI_CATALOG.find(e=>e.title==="Защита разума");var simple=psiUpgrade(mind,0),epic=psiUpgrade(mind,1);var before=featBalances();var card=newPsiCard(mind.id);card.level=5;card.feats=[0,1];savePsiCard(card);');
+assert.equal(run('featBalances().simple.left'),run('before.simple.left-1'));assert.equal(run('featBalances().epic.left'),run('before.epic.left-1'));assert.equal(run('psiPurchasedFeats().length'),2);
+assert.match(run('renderSummaryFeats()'),/Защита разума · стандартный фит/);assert.match(run('renderSummaryFeats()'),/Убрать фит/);assert.doesNotMatch(run('renderSummaryFeats()'),/data-effect-source="psi-feat:/);
+run('var duplicate={...structuredClone(card),id:crypto.randomUUID()};savePsiCard(duplicate);');assert.equal(run('featBalances().simple.used'),1);assert.equal(run('featBalances().epic.used'),1);
+run('card.feats=[];savePsiCard(card);');assert.equal(run('featBalances().simple.used'),1);
+run('duplicate.feats=[];savePsiCard(duplicate);');assert.equal(run('featBalances().simple.used'),0);assert.equal(run('featBalances().epic.used'),0);
+run('togglePsiUpgrade(simple.id);');assert.equal(run('featBalances().simple.used'),1);
+run('card.feats=[0];savePsiCard(card);');assert.equal(run('featBalances().simple.used'),1);
+run('togglePsiUpgrade(simple.id);');assert.equal(run('featBalances().simple.used'),0);assert.equal(run('state.play.psiCards.every(c=>!c.feats.length)'),true);
+run('var own=storeCustomFeat({title:"Custom feat",text:"A custom rule",kind:"simple"});');assert.equal(run('featBalances().simple.used'),1);assert.match(run('renderSummaryFeats()'),/Custom feat/);
+run('own=storeCustomFeat({...own,kind:"penalty"});');assert.equal(run('featBalances().simple.used'),0);assert.equal(run('featBalances().penalty.used'),1);
+run('own=storeCustomFeat({...own,title:"Updated feat",kind:"epic"});');assert.equal(run('featBalances().penalty.used'),0);assert.equal(run('featBalances().epic.used'),1);assert.equal(run('state.play.customFeats.length'),1);
+assert.match(run('renderAbilities()'),/Updated feat/);assert.match(run('renderFeatPicker()'),/Создать свой фит/);assert.match(run('renderFeatPickerResults()'),/Updated feat/);
+run('state.info.level=1;');assert.equal(run('featBalances().epic.left'),-1);
+run('togglePsiUpgrade(simple.id);var saved=validateCharacterData(JSON.parse(JSON.stringify(state)));');assert.equal(run('saved.play.customFeats[0].title'),'Updated feat');assert.equal(run('saved.play.psiFeats[0]'),run('simple.id'));
+run('state.play.customFeats=[];');assert.equal(run('featBalances().epic.used'),0);assert.equal(run('Object.hasOwn(state.play.featChoices,own.id)'),false);
+assert.throws(()=>run('storeCustomFeat({title:" ",text:"",kind:"simple"})'),/название/);assert.throws(()=>run('storeCustomFeat({title:"x",text:"",kind:"bad"})'),/тип/);
+run('state.play.customFeats=[null,{id:"invalid",title:"x",text:"",kind:"simple"}];state.play.psiFeats=["unknown",simple.id,simple.id];migrateExtraFeats();');assert.equal(run('state.play.customFeats.length'),0);assert.equal(run('state.play.psiFeats.length'),1);
+run('resetAudit();migratePsiCards();migrateExtraFeats();state.play.pinned.push(RULE_ENTRIES.find(e=>e.category==="Простые фиты").id);storeCustomFeat({title:"Custom",text:"",kind:"simple"});');assert.equal(run('featBalances().simple.used'),2);
+console.log('Passed: psi simple/epic point costs, shared upgrade deduplication, refunds, feat-list entries, direct ability selection, custom feat CRUD/type changes, negative balances and persistence.');
+
