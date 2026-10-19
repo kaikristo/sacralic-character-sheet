@@ -76,7 +76,7 @@ function resolveRoll(skill,mode,modifier,superiority,roll){
  if(target===null)throw Error('Исправьте формулу навыка.');
  if(mode==='aimed'){const expression=COMBAT_TABLE[combatKey(skill)]?.[skill[1]]?.hit.split(',')[1]?.trim();if(!expression||expression==='нет')throw Error('На этом уровне прицельное действие недоступно по таблице.');target=calculateFormula(expression.replace(/AGL/g,'DEX'),variables);}
  if(mode==='defense'){const defense=COMBAT_TABLE[combatKey(skill)]?.[skill[1]]?.attribute;if(defense&&/уворот/.test(defense)){base=statTotal('DEX');target=calculateFormula(defense.replace(/%.*$/,'').replace(/AGL/g,'DEX'),variables);}}
- target+=modifier-(mode==='defense'?superiority*5:0);
+ target+=modifier-(mode==='defense'?superiority*5:0);if(mode==='defense')target=Math.max(base,target);
  const pure=mode==='defense'&&roll<=base,success=roll<=target||pure,critical=success&&roll<=base&&roll<=statTotal('LCK')/2;
  return {name:skill[0],roll,target,base,pure,success,critical,mode};
 }
@@ -123,7 +123,7 @@ render=function(){
  migratePlay();migrateUi();applyUiScales();originalRender();
  document.querySelector('#nav').innerHTML=playPages.map(([name,index])=>`<button data-page="${index}" class="${page===index?'active':''}" aria-current="${page===index?'page':'false'}">${name}</button>`).join('');
  if(page===0){const status=document.querySelector('[data-ui-region="status"]');if(status){const summary=document.createElement('section');summary.className='overview-tactics';summary.innerHTML=renderPlaySummary();status.prepend(summary);} }
- if(page>=4){document.querySelector('#view').innerHTML=({4:renderCombatPage,5:renderAbilities,6:renderReference,7:renderJournal}[page]||renderCombatPage)()+renderItemDialog()+renderScaleDialog();if(itemOpen)document.querySelector('#item-dialog').showModal();else if(scaleOpen)document.querySelector('#scale-dialog').showModal();}
+ if(page>=4){document.querySelector('#view').innerHTML=({4:renderCombatPage,5:renderAbilities,6:renderReference,7:renderJournal,10:()=>renderPsiPage()}[page]||renderCombatPage)()+renderItemDialog()+renderScaleDialog();if(itemOpen)document.querySelector('#item-dialog').showModal();else if(scaleOpen)document.querySelector('#scale-dialog').showModal();}
  if(page===2){const inventory=document.querySelector('.inventory .toolbar');if(inventory)inventory.insertAdjacentHTML('beforeend','<button data-play="equipment-catalog">Из Sacralic</button>');}
  if(page===3){document.querySelector('#view').insertAdjacentHTML('beforeend',`<section class="panel character-race">${playHeading('РАСА ПЕРСОНАЖА','Расовая памятка')}<div class="rule-grid">${RULE_ENTRIES.filter(e=>e.category==='Расы'&&e.title.toLowerCase()===state.info.race.toLowerCase()).map(e=>sourceCard(e)).join('')||'<p class="help-copy">Найдите вашу расу в справочнике и сохраните её в способностях.</p>'}</div><button data-play="races">Все расы →</button></section>`);}
  for(const [id,value] of Object.entries(playDraft)){const input=document.querySelector('#'+id);if(input)input.value=value;}

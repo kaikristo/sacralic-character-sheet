@@ -212,7 +212,7 @@ resolveRoll=function(skill,mode,modifier,superiority,roll){
  const originalModifier=modifier;
  if(modifier<0)for(const src of selectedEffectSources().filter(s=>s.title.startsWith('Специалист')&&sourceConfig(s.id).enabled!==false&&sourceConfig(s.id).skill===skillIdentity(skill)))if(-modifier<effectsForSource(src).level/2)modifier=0;
  const r=beforeAbilityRoll(skill,mode,modifier,superiority,roll),stance=abilityState().stance;
- if(stance){if(mode==='defense'){if(stance.name==='Защитная стойка')r.target+=stance.level*5;if(stance.name==='Атакующая стойка')r.target/=2;}else if(stance.name==='Атакующая стойка'&&effectSkillMatches(skill,'combatAttack'))r.target+=stance.level*5;
+ if(stance){if(mode==='defense'){r.target=r.targetBeforeMinimum??r.target;if(stance.name==='Защитная стойка')r.target+=stance.level*5;if(stance.name==='Атакующая стойка')r.target/=2;r.target=Math.max(r.base,r.target);}else if(stance.name==='Атакующая стойка'&&effectSkillMatches(skill,'combatAttack'))r.target+=stance.level*5;
   r.success=roll<=r.target||r.pure;r.critical=r.success&&roll<=r.base&&roll<=resolveEffectTarget(statTotal('LCK')/2,'critical',{skill,mode}).value;
   if(stance.name==='Яростная стойка'){if(mode==='defense'){r.success=false;r.pure=false;r.critical=false;}else if(effectSkillMatches(skill,'combatAttack'))r.critical=r.success&&roll<=r.base&&roll<=resolveEffectTarget(statTotal('LCK')/2,'critical',{skill,mode}).value+stance.level;}
  }
@@ -226,7 +226,7 @@ renderRollResult=function(r){return beforeAbilityRollResult(r)+(r.advice||[]).ma
 const beforeAbilitySkillResult=skillResult;
 skillResult=function(s){let r=beforeAbilitySkillResult(s);const stance=abilityState().stance;if(!r.error&&stance?.name==='Атакующая стойка'&&effectSkillMatches(s,'combatAttack'))r={...r,value:r.value+stance.level*5};if(!r.error&&abilityState().flurry&&combatKey(s)?.startsWith('Ближний бой'))r={...r,value:r.value/2};return r;};
 const beforeAbilityDerived=derivedPlay;
-derivedPlay=function(){const d=beforeAbilityDerived(),stance=abilityState().stance;if(stance?.name==='Защитная стойка')d.dodge+=stance.level*5;if(stance?.name==='Атакующая стойка')d.dodge/=2;if(stance?.name==='Яростная стойка')d.dodge=0;return d;};
+derivedPlay=function(){const d=beforeAbilityDerived(),stance=abilityState().stance;if(stance?.name==='Защитная стойка')d.dodge+=stance.level*5;if(stance?.name==='Атакующая стойка')d.dodge/=2;if(stance?.name==='Яростная стойка')d.dodge=0;d.dodge=Math.max(statTotal('DEX'),d.dodge);return d;};
 const beforeAbilityMovement=movementValues;
 movementValues=function(config=state.play.movement){const m=beforeAbilityMovement(config),stance=abilityState().stance;if(!m.error&&stance){const factor=stance.name==='Яростная стойка'?1:.5;for(const k of ['walk','run','jump'])m[k]=m[k]*factor+(stance.name==='Яростная стойка'&&k!=='jump'?1:0);}return m;};
 const beforeAbilityResolveTarget=resolveEffectTarget;

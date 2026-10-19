@@ -170,8 +170,9 @@ resolveRoll=function(skill,mode,modifier,superiority,roll){
  if(mode==='aimed'){const expr=COMBAT_TABLE[combatKey(skill)]?.[effectiveSkillLevel(skill)]?.hit.split(',')[1]?.trim();if(!expr||expr==='нет')throw Error('На этом уровне прицельное действие недоступно.');target=calculateFormula(expr.replace(/AGL/g,'DEX'),vars);}
  if(mode==='defense'){const defense=COMBAT_TABLE[combatKey(skill)]?.[effectiveSkillLevel(skill)]?.attribute;if(defense&&/уворот/.test(defense)){base=statTotal('DEX');target=resolveEffectTarget(calculateFormula(defense.replace(/%.*$/,'').replace(/AGL/g,'DEX'),vars),'dodge').value;}}
  target=resolveEffectTarget(target,'chance:'+skillIdentity(skill),{skill,mode}).value+modifier-(mode==='defense'?superiority*5:0);
+ const targetBeforeMinimum=target;if(mode==='defense')target=Math.max(base,target);
  const pure=mode==='defense'&&roll<=base,success=roll<=target||pure,criticalChance=resolveEffectTarget(statTotal('LCK')/2,'critical',{skill,mode}).value;
- return {name:skill[0],roll,target,base,pure,success,critical:success&&roll<=base&&roll<=criticalChance,mode};
+ return {name:skill[0],roll,target,targetBeforeMinimum,base,pure,success,critical:success&&roll<=base&&roll<=criticalChance,mode};
 };
 const beforeEffectsCombatInfo=renderCombatInfo;
 renderCombatInfo=function(skill){const effective=[...skill];effective[1]=effectiveSkillLevel(skill);let extra='<p class="help-copy">Таблица выше показывает основу навыка. Итог обычного действия с выбранными бонусами: '+(chance(skill)??'ошибка')+'%.</p>';try{extra+='<p class="help-copy">Итог прицельного действия: '+resolveRoll(skill,'aimed',0,0,100).target+'%.</p>';}catch{}return beforeEffectsCombatInfo(effective)+extra;};

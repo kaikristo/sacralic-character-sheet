@@ -46,7 +46,7 @@ run('reset();state.info.race="Диззри";pin("Легкий стрелок");'
 run('state.effects.overrides["move:run"]={enabled:true,mode:"set",value:5};');assert.equal(run('movementValues().jump'),16);
 run('reset();pin("Вор");config("Вор",{conditions:{illegal:true,evasion:true}});');assert.equal(run('chance(state.skills[0])'),100);assert.equal(run('derivedPlay().dodge'),71);
 run('config("Вор",{conditions:{illegal:false,evasion:false}});');assert.equal(run('chance(state.skills[0])'),52);
-run('reset();pin("Дуболом");const melee=state.skills.find(s=>combatKey(s)&&/ближний/.test(s[0].toLowerCase()));');assert.equal(run('chance(melee)'),48);assert.equal(run('resolveRoll(melee,"defense",0,0,1).target'),3);
+run('reset();pin("Дуболом");const melee=state.skills.find(s=>combatKey(s)&&/ближний/.test(s[0].toLowerCase()));');assert.equal(run('chance(melee)'),48);assert.equal(run('resolveRoll(melee,"defense",0,0,1).target'),run('statTotal("DEX")'));
 run('reset();pin("Увеличить максимум стата (стат)");config("Увеличить максимум стата (стат)",{stat:"STR"});state.effects.baseCaps.STR=20;pin("Взять 20");config("Взять 20",{stat:"STR"});');assert.equal(run('statTotal("STR")'),20);assert.equal(run('statCap("STR")'),30);
 run('reset();state.info.race="Морферы.";state.stats[0][2]=30;');assert.equal(run('statTotal("STR")'),20);
 run('pin("Снять ограничение (стат)");config("Снять ограничение (стат)",{stat:"STR"});');assert.equal(run('statCap("STR")'),20);
