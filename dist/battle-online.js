@@ -41,9 +41,9 @@ class BattleRoomClient{
    this.guard(generation);const roomRef=this.ref(),commandRef=this.ref('commands',id),room=await tx.get(roomRef),request=await tx.get(commandRef);this.guard(generation);
    if(!request.exists()||request.data().status!=='pending')return;const doc=room.data();if(doc.ownerUid!==this.uid)throw Error('Только ведущий подтверждает действия.');const command=request.data(),member=await tx.get(this.ref('members',command.uid));this.guard(generation);
    try{
-    if(!member.exists())throw Error('Участник не состоит в комнате.');const state=BattleRoomClient.parse(doc),payload=JSON.parse(command.payloadJson),next=TacticalBattle.apply(state,{kind:command.kind,payload},command.uid,this.uid,()=>crypto.getRandomValues(new Uint32Array(1))[0]/4294967296),json=JSON.stringify(next);
+    if(!member.exists())throw Error('Участник не состоит в комнате.');const state=BattleRoomClient.parse(doc),payload=JSON.parse(command.payloadJson),next=TacticalBattle.apply(state,{kind:command.kind,payload},command.uid,this.uid,()=>crypto.getRandomValues(new Uint32Array(1))[0]/4294967296),initialJson=JSON.stringify(next);let json=initialJson;while(new TextEncoder().encode(json).length>350000&&next.history.length){next.history.shift();json=JSON.stringify(next);}
     if(new TextEncoder().encode(json).length>350000)throw Error('Комната достигла предела размера.');
-    tx.update(roomRef,{stateJson:json,revision:doc.revision+1,phase:next.phase,hostSeenAt:f.serverTimestamp()});tx.update(commandRef,{status:'applied',result:next.log[0]||'Готово',resolvedAt:f.serverTimestamp()});
+    tx.update(roomRef,{stateJson:json,revision:doc.revision+1,phase:next.phase,hostSeenAt:f.serverTimestamp()});tx.update(commandRef,{status:'applied',result:String(next.log[0]||'Готово').slice(0,120),resolvedAt:f.serverTimestamp()});
    }catch(error){tx.update(commandRef,{status:'rejected',result:String(error.message||'Действие отклонено.').slice(0,240),resolvedAt:f.serverTimestamp()});}
   });
  }

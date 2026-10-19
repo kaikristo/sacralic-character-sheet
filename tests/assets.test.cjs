@@ -6,3 +6,5 @@ assert.ok(refs.length>=20);for(const [,file,version] of refs){assert.equal(versi
 assert.equal(versionAssets(first,sha),first);assert.equal(versionAssets(first,next).includes('?v='+sha),false);
 assert.equal(versionAssets('<script src="https://example.com/lib.js"></script>',sha),'<script src="https://example.com/lib.js"></script>');assert.throws(()=>versionAssets(original,'invalid'));
 console.log('Passed: published scripts/styles get a consistent commit version, referenced files exist, repeated builds update versions and external URLs remain unchanged.');
+
+assert.ok(!/<script[^>]+src="battle(?:-combat|-core|-online)?\.js/.test(original),'Tactical scripts must not load in the character sheet');assert.ok(!original.includes('href="battle.css"'),'Tactical styles must not load');assert.ok(!fs.readFileSync(path.join(__dirname,'..','dist','ability-actions.js'),'utf8').includes('TacticalBattle'),'Character actions must not require the tactical engine');

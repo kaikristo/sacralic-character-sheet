@@ -273,6 +273,7 @@ attackNumbers=function(item){
   if(a.shooting&&/пулем[её]т/i.test(item.name+' '+d.type)&&abilitySource('Пулеметчик'))bb+=Math.floor(abilityLevel('Пулеметчик')/10);
   a.bb=resolveEffectTarget(bb,'attackArmorPen',{skill}).value;
  }
+ if(melee)a.range=Math.max(1,resolveEffectTarget(Number(a.range||1)+Number(d.rangeBonus||0),'meleeRange',{skill}).value);
  a.damage=normalizedAbilityDamage(a.damage);
  return a;
 };

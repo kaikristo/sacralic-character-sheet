@@ -83,7 +83,7 @@ function useAbility(id,index,options={}){
  if(action.id==='reputation')text='Изменение репутации: '+resolveEffectTarget(value,'reputation').value;
  if(action.id==='vehicle')text='HP транспорта: '+Math.max(0,value)*2;
  if(action.id==='work')text='Очки работы: '+work;
- if(action.id==='spirit')text='Духовный урон: '+TacticalBattle.dice(value+'d100');
+ if(action.id==='spirit')text='Духовный урон: '+Array.from({length:value},()=>randomDie(100)).reduce((sum,die)=>sum+die,0);
  if(action.id==='gray')text='Узнавание: '+roll+' / '+sourceConfig(id).manualChance+'; трактовку результата подтверждает ведущий.';
  if(['untrainedKnowledge','untrainedRepair'].includes(action.id)){const virtual=[action.id==='untrainedKnowledge'?'Знание (без навыка)':'Ремонт (без навыка)',0,'Мирные','INT','','','', 'untrained'];const target=resolveEffectTarget(value,'chance:untrained',{skill:virtual}).value;text='Бросок без навыка: '+roll+' / '+target+' — '+(roll<=target?'успех':'неудача');}
  state.log.unshift(source.title+': '+text);state.log=state.log.slice(0,100);return text;
@@ -144,6 +144,7 @@ function meleeMoveNumbers(entry,skill,item,baseCost){
  const absolute=!/^[+-]/.test(raw)&&/^\d+$/.test(raw),cost=absolute?+raw:raw==='-'?null:Number.isSafeInteger(ordinary)&&ordinary>=1?Math.max(1,ordinary+Number(raw)):null;
  const vars=Object.fromEntries(EFFECT_STATS.map(c=>[c,statTotal(c)]));Object.assign(vars,{AGL:statTotal('DEX'),RCT:statTotal('RTC')});
  let hit=null;if(row[2]==='стандарт')hit=chance(skill);else if(row[2]==='50% стандарт')hit=chance(skill)/2;else if(row[2]==='100%')hit=100;else if(row[2]!=='-'){const base=calculateFormula(String(row[2]).replace(/x/g,'*'),vars);hit=resolveEffectTarget(base,'chance:'+skillIdentity(skill),{skill}).value;}
+ if(hit!==null&&!/стойка$/.test(entry.title))hit=resolveEffectTarget(hit,'meleeMoveChance',{skill}).value;
  return {cost,chance:hit,defense:row[3],requirements:row[4],description:row[5],damage:attack?.damage||abilityState().meleeBase.damage||'укажите урон',damageFactor:(entry.title==='Проникающий удар'?.5:1)*(attack?.damageFactor||1),armorIgnore:entry.title==='Сильный удар'?.5:entry.title==='Мощный удар'?1:0,targets:entry.title==='Двойной удар'?2:entry.title==='Круговой удар'?'все в досягаемости':1};
 }
 function executeMeleeMove(id,skillId,options={}){
