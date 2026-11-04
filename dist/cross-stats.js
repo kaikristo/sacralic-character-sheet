@@ -1,7 +1,7 @@
 /* Explicit requested cross-stat unlocks. Stat checks are dynamic, including equipment and manual bonuses. */
 let crossDialog=null,crossResult='';
-function crossRule(codes){return RULE_ENTRIES.find(e=>e.category==='Кросс-бонусы'&&e.threshold===21&&e.stats?.length===2&&codes.every(c=>e.stats.includes(c)));}
-function crossActive(codes){const e=crossRule(codes);return !!e&&sourceConfig(e.id).enabled!==false&&codes.every(c=>statTotal(c)>=21);}
+function crossRule(codes,threshold=21){return RULE_ENTRIES.find(e=>e.category==='Кросс-бонусы'&&e.threshold===threshold&&e.stats?.length===2&&codes.every(c=>e.stats.includes(c)));}
+function crossActive(codes,threshold=21){const e=crossRule(codes,threshold);return !!e&&sourceConfig(e.id).enabled!==false&&codes.every(c=>statTotal(c)>=threshold);}
 function isMindResistanceSkill(skill){return [skill?.[0],skill&&skillEffectName(skill)].some(name=>['стойкостьразума','псистойкость'].includes(effectNorm(name)));}
 function crossChanceSpec(source,label,key){const id=source.id+'/'+key,a=state.effects.adjustments[id]||{};return {id,sourceId:source.id,source:source.title,url:source.url,label,op:'add',value:Number.isFinite(a.value)?a.value:10,enabled:a.enabled!==false,manual:Number.isFinite(a.value)};}
 const beforeCrossApplicable=applicableEffects;
