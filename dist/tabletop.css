@@ -7,3 +7,21 @@
 @media(max-width:700px){html:has(body[data-sheet-page="overview"]){overflow:hidden}body[data-sheet-page="overview"]{height:100dvh;overflow:hidden}.overview-deck::-webkit-scrollbar{width:0;height:0}}
 @media(max-width:700px){.overview-deck .skill-list{table-layout:fixed}.overview-deck .skill-list th:first-child,.overview-deck .skill-list td:first-child{width:auto}.overview-deck .skill-list input[type=number]{min-width:0!important}body[data-sheet-page="overview"] nav{scrollbar-width:none}body[data-sheet-page="overview"] nav::-webkit-scrollbar{display:none}}
 .weapon-skill-control{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 9px;align-items:center;margin:8px 0 10px;min-width:0}.weapon-skill-control>span{grid-column:1/-1;font-size:10px;color:var(--muted)}.weapon-skill-control select{width:100%;margin:0;min-width:0;min-height:38px;font-size:12px;padding:6px}.weapon-skill-control strong{font-size:21px;color:var(--gold);font-weight:500;white-space:nowrap}.weapon-skill-editor output{display:block;font-size:12px;color:var(--gold);line-height:1.6;margin-top:7px}.item-description .weapon-skill-control{max-width:100%}@media(max-width:700px){.weapon-skill-control select{font-size:16px;min-height:44px}.weapon-skill-control strong{font-size:20px}}
+
+/* Stable flex allocation and cell headers also work with iOS viewport and zoom changes. */
+@media(max-width:700px){
+ .overview-deck .left-sheet .skills-panel{flex:1 1 0;overflow:hidden;min-height:0}
+ .overview-deck .left-sheet .skills-panel.panel-collapsed{flex:0 0 auto}
+ .overview-deck .skill-table-scroll{flex:1 1 0;overflow:auto;min-height:0;overflow-anchor:none}
+ .overview-deck .skill-list{border-collapse:separate;border-spacing:0}
+ .overview-deck .skill-list thead{position:static}
+ .overview-deck .skill-list th{position:sticky;top:0;z-index:1;background:var(--panel);box-shadow:0 1px var(--line)}
+ .overview-deck .skill-list input[type=number],.overview-deck .section-points input,#progression input,#progression select{font-size:16px}
+}
+.character-wallet{display:flex;gap:10px;align-items:center}.character-wallet label{font-size:10px}.character-wallet input{display:block;width:118px;max-width:100%;min-height:34px;font-size:16px;color:var(--gold);margin-top:3px;padding:5px 7px}.intro{gap:14px}.intro>.character-wallet{flex:none}.intro>.level-button{flex:none}.intro>div:not(.character-wallet){min-width:0}
+@media(max-width:700px){.intro{flex-wrap:wrap;gap:6px 10px}.intro>div:not(.character-wallet){flex:1}.intro>.character-wallet{order:3;flex:1 0 100%;justify-content:flex-end;gap:12px}.character-wallet label{display:flex;align-items:center;gap:6px;font-size:10px}.character-wallet input{width:100px;font-size:16px;margin:0;min-height:32px}.intro>.level-button{margin-left:auto}.inventory-summary>label{min-width:110px}}
+@media(max-width:700px){
+ .overview-deck .overview-page>.left-sheet{overflow-y:auto;overscroll-behavior-y:contain}
+ .overview-deck .left-sheet .skills-panel:not(.panel-collapsed){min-height:220px}
+ .overview-deck .skill-table-scroll{overflow-x:hidden}
+}

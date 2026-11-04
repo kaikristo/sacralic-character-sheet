@@ -31,6 +31,7 @@ function validateCharacterData(input){
  if(!input||typeof input!=='object'||Array.isArray(input))throw Error('Нет данных персонажа.');
  const d=JSON.parse(JSON.stringify(input));
  if(!d.info||typeof d.info.name!=='string'||!Array.isArray(d.stats)||d.stats.length!==8||!Array.isArray(d.skills)||!Array.isArray(d.items)||!Array.isArray(d.zones)||d.zones.length!==6)throw Error('Неверная структура персонажа.');
+ if(d.info.bank!==undefined&&(!Number.isFinite(d.info.bank)||d.info.bank<0))throw Error('Некорректное поле: bank');
  const codes=['STR','DEX','CON','RTC','ACC','INT','LCK','CHA'];
  if(!codes.every(code=>d.stats.filter(s=>Array.isArray(s)&&s[1]===code&&Number.isSafeInteger(s[2])&&s[2]>=0&&(s[3]===undefined||Number.isFinite(s[3])&&s[3]>=0)).length===1))throw Error('Некорректные характеристики.');
  for(const key of ['hp','maxhp','level','height','weight','money','mutation'])if(!Number.isFinite(d.info[key])||d.info[key]<0)throw Error('Некорректное поле: '+key);

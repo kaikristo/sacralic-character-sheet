@@ -28,17 +28,17 @@ function packColumns(heights,capacity,gap=8){const columns=[];for(let i=0;i<heig
 function packMobileOverview(focus){
  const grid=document.querySelector('.overview-deck');if(!grid)return;
  const cards=[...grid.querySelectorAll(':scope > .overview-slide, :scope > .overview-page > .overview-slide')];if(!cards.length)return;cards.forEach((c,i)=>c.dataset.packOrder??=String(i));cards.sort((a,b)=>Number(a.dataset.packOrder)-Number(b.dataset.packOrder));
- const scrollPositions=new Map(cards.map(c=>[c,c.scrollTop]));
+ const scrollPositions=new Map([...cards,...grid.querySelectorAll('.skill-table-scroll')].map(c=>[c,c.scrollTop]));
  const focusCard=focus?.closest?.('.overview-slide'),label=focusCard?.dataset.slideLabel||packedFocusLabel;
- const width=grid.clientWidth,height=Math.max(280,innerHeight-grid.getBoundingClientRect().top-8);grid.style.height=height+'px';
+ const width=grid.clientWidth,height=mobileOverviewHeight(grid);grid.style.height=height+'px';
  for(const card of cards){grid.append(card);card.style.width=width+'px';card.style.maxHeight=height+'px';card.style.height='auto';card.style.alignSelf='start';card.classList.add('packed-card');if(card.classList.contains('left-sheet')&&!card.querySelector('.skills-panel')?.classList.contains('panel-collapsed'))card.style.height=height+'px';}
  for(const old of grid.querySelectorAll(':scope > .overview-page'))old.remove();
- const heights=cards.map(c=>Math.min(height,Math.ceil(c.getBoundingClientRect().height))),columns=packColumns(heights,height);
+ const heights=cards.map(c=>Math.min(height,Math.ceil(c.getBoundingClientRect().height/(grid.getBoundingClientRect().width/width||1)))),columns=packColumns(heights,height);
  for(const col of columns){const wrapper=document.createElement('div');wrapper.className='overview-page';for(const i of col.items){cards[i].style.height=heights[i]+'px';wrapper.append(cards[i]);}grid.append(wrapper);}
  const nav=document.querySelector('.overview-deck-nav'),selected=Math.max(0,columns.findIndex(c=>c.items.some(i=>cards[i].dataset.slideLabel===label)));mobileOverviewSlide=selected;
  if(nav){nav.innerHTML=columns.map((c,i)=>`<button data-tabletop="slide" data-slide="${i}" aria-label="Панель ${c.items.map(n=>cards[n].dataset.slideLabel).join(', ')}" aria-pressed="${i===selected}">${i+1}</button>`).join('');}
  grid.scrollLeft=(width+8)*selected;
- for(const card of cards)card.scrollTop=scrollPositions.get(card)||0;
+ for(const [el,scrollTop] of scrollPositions)el.scrollTop=scrollTop;
  if(!grid.dataset.packedScroll){grid.dataset.packedScroll='true';grid.addEventListener('scroll',()=>{const i=Math.round(grid.scrollLeft/(grid.clientWidth+8)),p=grid.children[i];packedFocusLabel=p?.querySelector('.overview-slide')?.dataset.slideLabel||packedFocusLabel;},{passive:true});}
 }
 function masonryPanels(grid){
@@ -69,7 +69,10 @@ document.addEventListener('click',event=>{
  if(woundDialog){document.querySelector('#view').insertAdjacentHTML('beforeend',renderWoundDialog());document.querySelector('#wound-dialog').showModal();}
 },true);
 document.addEventListener('toggle',event=>{if(event.target.tagName==='DETAILS'&&!event.target.closest('dialog')){cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(()=>refreshPanelLayout(event.target));}},true);
-window.addEventListener?.('resize',()=>{cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(()=>refreshPanelLayout());});
+const resizeSheetPanels=()=>{cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(()=>refreshPanelLayout());};
+window.addEventListener?.('resize',resizeSheetPanels);
+window.visualViewport?.addEventListener('resize',resizeSheetPanels);
+window.matchMedia('(max-width:700px)').addEventListener?.('change',()=>{if(!libraryHome)render();});
 render();
 
 // Reuse the native cancel lifecycle so a dismissed dialog stays closed after rendering.

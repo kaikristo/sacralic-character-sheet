@@ -271,7 +271,7 @@ attackNumbers=function(item){
  if(a.bbBase!==null){let bb=a.bbBase+Number(a.row?.armorPen||0)+Number(d.armorPenBonus||0);
   if(melee&&isBareFist(item)&&abilitySource('Железный кулак'))bb+=Math.floor(state.info.level/5);
   if(a.shooting&&/пулем[её]т/i.test(item.name+' '+d.type)&&abilitySource('Пулеметчик'))bb+=Math.floor(abilityLevel('Пулеметчик')/10);
-  a.bb=resolveEffectTarget(bb,'attackArmorPen',{skill}).value;
+  const armorPenResult=resolveEffectTarget(bb,'attackArmorPen',{skill,attackKey:a.key});a.bb=armorPenResult.value;a.strengthArmorPen=armorPenResult.lines.filter(e=>e.enabled&&e.label?.startsWith('STR 21')).reduce((sum,e)=>sum+e.value,0);for(const e of armorPenResult.lines||[])if(e.enabled&&e.label?.startsWith('STR 21'))note(e.label+' ('+e.value+')');
  }
  if(melee)a.range=Math.max(1,resolveEffectTarget(Number(a.range||1)+Number(d.rangeBonus||0),'meleeRange',{skill}).value);
  a.damage=normalizedAbilityDamage(a.damage);

@@ -1,0 +1,22 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');const {run,listeners}=require('./abilities.test.cjs');run(fs.readFileSync(path.resolve(__dirname,'../dist/wallet.js'),'utf8'));
+run('resetAudit();state.info.xp=100;');
+const handler=listeners.change.find(fn=>String(fn).includes('Object.hasOwn(playDraft'));
+for(const [id,value] of [['xp-amount','25'],['ability-xp-type','combat']]){let stopped=false;handler({target:{id,value},stopImmediatePropagation(){stopped=true;}});assert.equal(stopped,true);assert.equal(run('playDraft['+JSON.stringify(id)+']'),value);}
+run('document.querySelector("#xp-amount").value="25";document.querySelector("#ability-xp-type").value="raw";');assert.equal(run('adjustXp(true)'),true);assert.equal(run('state.info.xp'),125);assert.equal(run('adjustXp(false)'),true);assert.equal(run('state.info.xp'),100);
+run('document.querySelector("#xp-amount").value="1000";adjustXp(false);');assert.equal(run('state.info.xp'),0);
+run('document.querySelector("#xp-amount").value="";');assert.equal(run('adjustXp(true)'),false);assert.equal(run('adjustXp(false)'),false);
+run('state.info.xp=100;document.querySelector("#xp-amount").value="20";document.querySelector("#ability-xp-type").value="combat";state.effects.overrides["xp:combat"]={enabled:true,mode:"add",value:5};adjustXp(true);');assert.equal(run('state.info.xp'),125);run('adjustXp(false);');assert.equal(run('state.info.xp'),105);assert.match(run('renderProgression()'),/value="combat" selected/);
+run('resetAudit();var melee=auditWeapon();var ranged=auditWeapon("Стрельба(легкое)");var before=attackNumbers(melee).bb;state.stats.find(s=>s[1]==="STR")[2]=20;');assert.equal(run('attackNumbers(melee).bb'),run('before'));
+run('state.stats.find(s=>s[1]==="STR")[3]=1;');assert.equal(run('statTotal("STR")'),21);assert.equal(run('attackNumbers(melee).bb'),run('before+2'));assert.match(run('attackNumbers(melee).notes.join(" ")'),/STR 21/);
+run('var agile=auditWeapon("Ближний бой ловкий стиль");var at21=attackNumbers(agile).bb;state.stats.find(s=>s[1]==="STR")[3]=0;');assert.equal(run('attackNumbers(agile).bb'),run('at21-2'));
+run('var ranged20=attackNumbers(ranged).bb;state.stats.find(s=>s[1]==="STR")[3]=1;');assert.equal(run('attackNumbers(ranged).bb'),run('ranged20'));
+run('var strRule=RULE_ENTRIES.find(e=>e.stat==="STR"&&e.threshold===21);state.effects.adjustments[strRule.id+"/armorPen"]={enabled:false};');assert.equal(run('attackNumbers(melee).bb'),run('before'));
+run('state.effects.adjustments[strRule.id+"/armorPen"]={value:4};');assert.equal(run('attackNumbers(melee).bb'),run('before+4'));
+run('state.effects.overrides.attackArmorPen={enabled:true,mode:"set",value:7};');assert.equal(run('attackNumbers(melee).bb'),7);
+run('resetAudit();delete state.info.bank;migrateCharacter(state);');assert.equal(run('state.info.bank'),0);assert.equal(run('state.info.money'),17636000);
+run('setWalletBalance("money",123);setWalletBalance("bank",456);var copy=validateCharacterData(JSON.parse(JSON.stringify(state)));');assert.equal(run('copy.info.money'),123);assert.equal(run('copy.info.bank'),456);
+const walletInput=listeners.input.find(fn=>String(fn).includes('dataset.wallet'));walletInput({target:{dataset:{wallet:'bank'},value:'999'}});assert.equal(run('state.info.bank'),999);assert.match(run('renderWallet()'),/Наличные/);assert.match(run('renderWallet()'),/Банк/);assert.throws(()=>run('setWalletBalance("bank",-1)'),/Сумма/);assert.throws(()=>run('setWalletBalance("other",2)'),/Сумма/);
+run('var blank=createBlankCharacter("Wallet QA","Человек","");');assert.equal(run('blank.info.money'),0);assert.equal(run('blank.info.bank'),0);assert.throws(()=>run('validateCharacterData({...state,info:{...state.info,bank:-1}})'),/bank/);
+run('var innerHeight=800;');
+assert.equal(run('mobileOverviewHeight({clientWidth:300,getBoundingClientRect:()=>({width:450,top:100})})'),run('(innerHeight-100)/1.5-8'));
+console.log('Passed: XP blur draft preservation, add/subtract/bonus paths, STR 21 melee-only penetration and sources/overrides, cash/bank legacy migration and serialization, scale-aware viewport sizing.');

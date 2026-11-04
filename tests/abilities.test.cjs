@@ -71,4 +71,4 @@ run('resetAudit();auditPin("Оглушающий удар");auditPin("Атаку
 run('state.play.customConditions[0].enabled=false;');assert.equal(run('meleeMoveNumbers(strikeEntry,state.skills[0],moveWeapon,6).chance'),run('statTotal("STR")*2'));assert.equal(run('attackNumbers(moveWeapon).range'),1);
 console.log('Passed: guest solo arenas, library isolation, current character import, prepared enemies, manual turns for both teams, AP/ammo, fallback training attack and reset.');
 console.log('Passed: all 50 feats, 44 prestige classes and 14 moves have audited coverage; grants, separate repeat targets, disabling, skill caps, attack damage/mastery/critical modifiers, armor, HP/EP, psi payments/regen, aimed restrictions, requirements, AP, combination, stances/expiry/undo, daily and lifetime counters.');
-module.exports={run};
+module.exports={run,listeners};

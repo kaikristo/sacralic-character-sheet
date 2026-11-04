@@ -34,7 +34,7 @@ function buildRuleEntries(){
 }
 const RULE_ENTRIES=buildRuleEntries();
 let referenceCategory='Все',referenceQuery='',referenceLimit=30,playDialog=null,editorIndex=-1,rollResult=null;
-const playDraft={'delta':'10','action-name':'','action-cost':'1','roll-skill':'0','roll-mode':'normal','roll-modifier':'0','roll-superiority':'0','armor-damage':'100','armor-ar':'0','armor-ab':'0','journal-text':''};
+const playDraft={'xp-amount':'','ability-xp-type':'raw','delta':'10','action-name':'','action-cost':'1','roll-skill':'0','roll-mode':'normal','roll-modifier':'0','roll-superiority':'0','armor-damage':'100','armor-ar':'0','armor-ab':'0','journal-text':''};
 const playPages=[['Обзор',0],['Бой',4],['Навыки',1],['Инвентарь',2],['Способности',5],['Справочник',6],['Журнал',7],['Персонаж',3]];
 function migratePlay(){
  const defaults={round:1,apMax:10,ap:10,walk:1,run:2,deathFails:0,dying:false,stabilized:false,conditions:[],history:[],pinned:[],resources:[],journal:[],abilities:[]};

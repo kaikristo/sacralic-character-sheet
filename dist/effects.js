@@ -119,7 +119,9 @@ function effectExpression(value,spec){
  return EFFECT_STATS.includes(value)?statTotal(value):0;
 }
 function applicableEffects(target,context={}){
- return allEffectSpecs().filter(e=>{
+ const specs=allEffectSpecs();
+ if(target==='attackArmorPen'&&(context.attackKey||(context.skill&&combatKey(context.skill)))?.startsWith('Ближний бой')&&statTotal('STR')>=21){const source=RULE_ENTRIES.find(e=>e.stat==='STR'&&e.threshold===21);if(source)specs.push({id:source.id+'/armorPen',sourceId:source.id,source:source.title,url:source.url,target,value:2,label:'STR 21: бронебойность ближнего боя',op:'add',sourceEnabled:sourceConfig(source.id).enabled!==false});}
+ return specs.filter(e=>{
   if(e.target!==target&&!(target.startsWith('chance:')&&e.target==='chance')&&!(target.startsWith('skillLevel:')&&e.target==='skillLevel'))return false;
   if(e.scope&&(!context.skill||!effectSkillMatches(context.skill,e.scope)))return false;
   if(e.attribute&&context.skill?.[3]!==e.attribute)return false;
@@ -175,7 +177,7 @@ resolveRoll=function(skill,mode,modifier,superiority,roll){
  return {name:skill[0],roll,target,targetBeforeMinimum,base,pure,success,critical:success&&roll<=base&&roll<=criticalChance,mode};
 };
 const beforeEffectsCombatInfo=renderCombatInfo;
-renderCombatInfo=function(skill){const effective=[...skill];effective[1]=effectiveSkillLevel(skill);let extra='<p class="help-copy">Таблица выше показывает основу навыка. Итог обычного действия с выбранными бонусами: '+(chance(skill)??'ошибка')+'%.</p>';try{extra+='<p class="help-copy">Итог прицельного действия: '+resolveRoll(skill,'aimed',0,0,100).target+'%.</p>';}catch{}return beforeEffectsCombatInfo(effective)+extra;};
+renderCombatInfo=function(skill){const effective=[...skill];effective[1]=effectiveSkillLevel(skill);let extra='<p class="help-copy">Таблица выше показывает основу навыка. Итог обычного действия с выбранными бонусами: '+(chance(skill)??'ошибка')+'%.</p>';if(combatKey(skill)?.startsWith('Ближний бой')&&statTotal('STR')>=21){const ab=resolveEffectTarget(Number(COMBAT_TABLE[combatKey(skill)]?.[effectiveSkillLevel(skill)]?.armorPen||0),'attackArmorPen',{skill,attackKey:combatKey(skill)});extra+='<p class="help-copy">Бонус ББ от навыка и действующих модификаторов: '+ab.value+'. '+ab.lines.filter(e=>e.enabled).map(e=>e.label+' ('+e.value+')').join('; ')+'. ББ оружия добавляется отдельно.</p>';}try{extra+='<p class="help-copy">Итог прицельного действия: '+resolveRoll(skill,'aimed',0,0,100).target+'%.</p>';}catch{}return beforeEffectsCombatInfo(effective)+extra;};
 function effectTargetLabel(key){const [kind,id]=key.split(':');const s=state.skills.find(s=>skillIdentity(s)===id);return ({stat:'Характеристика',cap:'Максимум',chance:'Шанс',skillLevel:'Уровень навыка',skillCap:'Максимум навыка',move:'Движение'})[kind]?({stat:'Характеристика',cap:'Максимум',chance:'Шанс',skillLevel:'Уровень навыка',skillCap:'Максимум навыка',move:'Движение'})[kind]+' · '+(s?.[0]||({walk:'Шаг',run:'Бег',jump:'Прыжок'})[id]||id):({hp:'Максимальные HP',hpModifier:'Модификатор HP',ap:'ОД в раунд',dodge:'Уворот',initiative:'Инициатива',jumpCost:'ОД за прыжок',critical:'Критический шанс'})[key]||key;}
 function targetBaseValue(key){
  const [kind,id]=key.split(':'),s=state.skills.find(s=>skillIdentity(s)===id);
