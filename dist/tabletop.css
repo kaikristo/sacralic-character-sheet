@@ -28,3 +28,15 @@
 
 .header-health{display:flex;align-items:baseline;gap:5px;white-space:nowrap;min-height:34px;color:var(--gold);flex:none}.header-health small{font-size:10px}.header-health strong{font-size:17px;font-weight:500}.header-health span{font-size:12px}.health-board-dialog{width:min(390px,96vw);max-height:92dvh;overflow:auto}.health-board-dialog .toolbar{align-items:center}.health-board-dialog .body-health{font-size:25px}.health-board-dialog .wound-board{grid-template-columns:78px minmax(0,1fr)}.health-board-dialog .wound-figure .reference-body-shell{height:345px}.health-board-dialog .body-health button{min-height:36px}.health-board-dialog .compact-traumas{margin-top:12px}
 @media(max-width:700px){.intro>.header-health{padding:4px 7px;min-height:30px;gap:4px}.header-health strong{font-size:15px}.header-health span{font-size:11px}.overview-deck .skill-table-scroll{touch-action:pan-y pinch-zoom;overscroll-behavior-x:auto}.overview-deck .skill-name-label,.overview-deck .skill-name-button{-webkit-user-select:none;user-select:none}.health-board-dialog{width:100%;max-height:92dvh}.health-board-dialog .toolbar h2{margin:0}}
+
+@media(max-width:700px){
+ .overview-deck>.overview-fixed-view{overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;padding:0;align-self:start;justify-content:flex-start}
+ .overview-fixed-view>.panel{width:100%;margin:0!important;box-sizing:border-box;flex:none;overflow:visible;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+ .overview-fixed-view>.left-sheet{display:flex;flex-direction:column;overflow:hidden;min-height:0}
+ .overview-fixed-view .left-sheet .skills-panel:not(.panel-collapsed){min-height:180px}
+ .overview-fixed-view .left-sheet .skills-panel.panel-collapsed{flex:none;min-height:0}
+ .overview-fixed-view>.available-attacks{flex:none;overflow:visible}
+ .overview-fixed-view .field-notes-panel textarea{min-height:260px;resize:vertical}
+ .overview-fixed-view .summary-feats{border-top:1px solid var(--line)}
+}
+.cross-stat-abilities{margin-top:12px;padding-top:8px;border-top:1px solid var(--line)}.cross-stat-abilities>article{padding:10px 0;border-bottom:1px solid var(--line)}.cross-stat-abilities>article>b,.cross-stat-abilities>article>small{display:block;margin-bottom:6px}.cross-stat-abilities summary{cursor:pointer;padding:7px 0}.cross-stat-abilities p{line-height:1.6;font-size:12px}.cross-stat-abilities button{min-height:36px;margin:3px 4px 3px 0}.cross-stat-abilities a{color:var(--gold)}.cross-action-result{color:var(--gold);line-height:1.7;overflow-wrap:anywhere}.zone-reroll-button{display:block;margin:10px 0 0 auto;min-height:36px}#cross-dialog>label{margin:14px 0}#cross-dialog select{margin-top:6px}#cross-dialog p{line-height:1.6}

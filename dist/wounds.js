@@ -25,8 +25,19 @@ function collectPanelHelp(){
  for(const panel of document.querySelectorAll('[data-wound-help]')){const head=panel.querySelector('.section-heading,.play-heading');if(head&&!head.querySelector('[data-wound="panel-info"]'))head.insertAdjacentHTML('beforeend',`<button class="info-dot" data-wound="panel-info" data-help-key="${panel.dataset.woundHelp}" aria-label="Подсказки: ${esc(panel.querySelector('h2,h3')?.textContent.replace(/[▾▸]/g,'').trim()||'панель')}">i</button>`);}
 }
 function packColumns(heights,capacity,gap=8){const columns=[];for(let i=0;i<heights.length;i++){let c=columns.find(x=>x.used+(x.items.length?gap:0)+heights[i]<=capacity+.5);if(!c){c={items:[],used:0};columns.push(c);}c.used+=(c.items.length?gap:0)+heights[i];c.items.push(i);}return columns;}
+function layoutFixedOverview(grid,focus){
+ const height=mobileOverviewHeight(grid),width=grid.clientWidth,views=[...grid.children],scrolls=new Map([...views,...grid.querySelectorAll('.skill-table-scroll')].map(el=>[el,el.scrollTop]));
+ grid.style.height=height+'px';
+ const left=grid.querySelector('.left-sheet');if(left){const closed=left.querySelector('.skills-panel')?.classList.contains('panel-collapsed');left.style.height=closed?'auto':Math.max(400,Math.min(520,height*.72))+'px';}
+ const label=focus?.closest?.('.overview-fixed-view')?.dataset.slideLabel||packedFocusLabel,index=views.findIndex(v=>v.dataset.slideLabel===label);
+ if(index>=0)mobileOverviewSlide=index;mobileOverviewSlide=Math.max(0,Math.min(views.length-1,mobileOverviewSlide));
+ for(const view of views){view.style.width=width+'px';view.style.height=height+'px';}
+ grid.scrollLeft=(width+8)*mobileOverviewSlide;document.querySelector('.overview-deck-nav')?.querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-pressed',String(i===mobileOverviewSlide)));
+ for(const [el,scrollTop] of scrolls)el.scrollTop=scrollTop;
+}
 function packMobileOverview(focus){
  const grid=document.querySelector('.overview-deck');if(!grid)return;
+ if(grid.dataset.fixedViews==='true'){layoutFixedOverview(grid,focus);return;}
  const cards=[...grid.querySelectorAll(':scope > .overview-slide, :scope > .overview-page > .overview-slide')];if(!cards.length)return;cards.forEach((c,i)=>c.dataset.packOrder??=String(i));cards.sort((a,b)=>Number(a.dataset.packOrder)-Number(b.dataset.packOrder));
  const scrollPositions=new Map([...cards,...grid.querySelectorAll('.skill-table-scroll')].map(c=>[c,c.scrollTop]));
  const focusCard=focus?.closest?.('.overview-slide'),label=focusCard?.dataset.slideLabel||packedFocusLabel;

@@ -78,12 +78,14 @@ function setupOverviewDeck(){
  const left=grid.querySelector('.left-sheet');if(!left)return;
  const attacks=document.createElement('div');attacks.innerHTML=renderAvailableAttacks();grid.append(attacks.firstElementChild);
  if(!window.matchMedia('(max-width:700px)').matches)return;
- const summary=grid.querySelector('.overview-tactics'),feats=grid.querySelector('.summary-feats'),body=grid.querySelector('[data-ui-region="body"]'),status=grid.querySelector('[data-ui-region="status"]'),attack=grid.querySelector('.available-attacks');
- for(const [panel,label] of [[left,'Характеристики и навыки'],[attack,'Атаки'],[summary,'Общая информация'],[feats,'Фиты'],[body,'Зоны попадания'],[status,'HP и заметки'],[grid.querySelector('.psi-favorites-panel'),'Пси-карточки']])if(panel){grid.append(panel);panel.classList.add('overview-slide');panel.dataset.slideLabel=label;if(!panel.classList.contains('panel'))panel.classList.add('panel');}
- grid.classList.add('overview-deck');
- const nav=document.createElement('div');nav.className='overview-deck-nav';nav.setAttribute('aria-label','Панели обзора');nav.innerHTML=[...grid.children].map((p,i)=>`<button data-tabletop="slide" data-slide="${i}" aria-label="Панель ${p.dataset.slideLabel}" aria-pressed="${i===mobileOverviewSlide}">${i+1}</button>`).join('')+'<span>Свайп ← →</span>';grid.before(nav);
+ const summary=grid.querySelector('.overview-tactics'),feats=grid.querySelector('.summary-feats'),body=grid.querySelector('[data-ui-region="body"]'),status=grid.querySelector('[data-ui-region="status"]'),attack=grid.querySelector('.available-attacks'),notes=grid.querySelector('.field-notes-panel'),psi=grid.querySelector('.psi-favorites-panel');
+ const views=[['Характеристики, навыки и атаки',[left,attack]],['Зоны попадания',[body]],['Состояние и фиты',[summary,status,feats,psi]],['Полевые заметки',[notes]]];
+ grid.classList.add('overview-deck');grid.dataset.fixedViews='true';
+ for(const [label,panels] of views){const wrapper=document.createElement('div');wrapper.className='overview-page overview-fixed-view';wrapper.dataset.slideLabel=label;for(const panel of panels.filter(Boolean)){panel.classList.add('overview-slide');panel.dataset.slideLabel=label;if(!panel.classList.contains('panel'))panel.classList.add('panel');wrapper.append(panel);}grid.append(wrapper);}
+ mobileOverviewSlide=Math.max(0,Math.min(views.length-1,mobileOverviewSlide));
+ const nav=document.createElement('div');nav.className='overview-deck-nav';nav.setAttribute('aria-label','Панели обзора');nav.innerHTML=views.map(([label],i)=>`<button data-tabletop="slide" data-slide="${i}" aria-label="Панель ${label}" aria-pressed="${i===mobileOverviewSlide}">${i+1}</button>`).join('');grid.before(nav);
  const table=left.querySelector('.skill-list');if(table){const wrap=document.createElement('div');wrap.className='skill-table-scroll';table.before(wrap);wrap.append(table);}
- grid.addEventListener('scroll',()=>{const index=Math.round(grid.scrollLeft/(grid.clientWidth+8));if(index!==mobileOverviewSlide){mobileOverviewSlide=index;nav.querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-pressed',String(i===index)));}},{passive:true});
+ grid.addEventListener('scroll',()=>{const index=Math.round(grid.scrollLeft/(grid.clientWidth+8));packedFocusLabel=grid.children[index]?.dataset.slideLabel||packedFocusLabel;mobileOverviewSlide=index;nav.querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-pressed',String(i===index)));},{passive:true});
  requestAnimationFrame(()=>{grid.style.height=mobileOverviewHeight(grid)+'px';grid.scrollLeft=(grid.clientWidth+8)*mobileOverviewSlide;});
 }
 const beforeTabletopRender=render;
