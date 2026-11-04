@@ -25,3 +25,6 @@
  .overview-deck .left-sheet .skills-panel:not(.panel-collapsed){min-height:220px}
  .overview-deck .skill-table-scroll{overflow-x:hidden}
 }
+
+.header-health{display:flex;align-items:baseline;gap:5px;white-space:nowrap;min-height:34px;color:var(--gold);flex:none}.header-health small{font-size:10px}.header-health strong{font-size:17px;font-weight:500}.header-health span{font-size:12px}.health-board-dialog{width:min(390px,96vw);max-height:92dvh;overflow:auto}.health-board-dialog .toolbar{align-items:center}.health-board-dialog .body-health{font-size:25px}.health-board-dialog .wound-board{grid-template-columns:78px minmax(0,1fr)}.health-board-dialog .wound-figure .reference-body-shell{height:345px}.health-board-dialog .body-health button{min-height:36px}.health-board-dialog .compact-traumas{margin-top:12px}
+@media(max-width:700px){.intro>.header-health{padding:4px 7px;min-height:30px;gap:4px}.header-health strong{font-size:15px}.header-health span{font-size:11px}.overview-deck .skill-table-scroll{touch-action:pan-y pinch-zoom;overscroll-behavior-x:auto}.overview-deck .skill-name-label,.overview-deck .skill-name-button{-webkit-user-select:none;user-select:none}.health-board-dialog{width:100%;max-height:92dvh}.health-board-dialog .toolbar h2{margin:0}}

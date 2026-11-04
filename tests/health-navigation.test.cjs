@@ -1,0 +1,15 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');const {run,listeners}=require('./abilities.test.cjs');
+for(const file of ['wallet','health-and-navigation'])run(fs.readFileSync(path.resolve(__dirname,'../dist/'+file+'.js'),'utf8'));
+run('resetAudit();');assert.match(run('renderHeaderHealth()'),/HP/);assert.match(run('renderHealthBoard()'),/Зоны попадания/);assert.match(run('renderHealthBoard()'),/data-newtrauma/);assert.equal((run('renderHealthBoard()').match(/<path data-zone=/g)||[]).length,6);
+run('setCurrentHealth(state.info.maxhp-100);');assert.match(run('renderHeaderHealth()'),new RegExp(run('state.info.hp.toLocaleString("ru")')));
+run('healthBoardOpen=true;');const cancel=listeners.cancel.find(fn=>String(fn).includes("event.target.id==='health-board-dialog'"));let prevented=false;cancel({target:{id:'health-board-dialog'},preventDefault(){prevented=true;}});assert.equal(prevented,true);assert.equal(run('healthBoardOpen'),false);
+assert.equal(run('swipePageIndex(0,-100,5,390)'),1);assert.equal(run('swipePageIndex(2,100,5,390)'),1);assert.equal(run('swipePageIndex(0,100,5,390)'),0);assert.equal(run('swipePageIndex(4,-100,5,390)'),4);assert.equal(run('swipePageIndex(2,-10,5,390)'),2);
+run('window.matchMedia=()=>({matches:true});');
+const down=listeners.pointerdown.find(fn=>String(fn).includes('skillPageGesture={')),move=listeners.pointermove.find(fn=>String(fn).includes('g.axis')),up=listeners.pointerup.find(fn=>String(fn).includes('finishSkillPageGesture()'));
+const grid={clientWidth:390,scrollLeft:0,style:{removeProperty(){}},children:Array.from({length:5},(_,i)=>({querySelector:()=>({dataset:{slideLabel:'Panel '+i}})})),getBoundingClientRect:()=>({width:390}),scrollTo({left}){this.scrollLeft=left;}};
+const area={closest:()=>grid,setPointerCapture(){}};const target={closest:()=>area};
+const e=(x,y)=>({target,pointerId:7,clientX:x,clientY:y,preventDefault(){this.prevented=true;},stopImmediatePropagation(){this.stopped=true;}});
+down(e(250,300));const horizontal=e(100,305);move(horizontal);assert.equal(horizontal.prevented,true);assert.equal(horizontal.stopped,true);up(e(100,305));assert.equal(grid.scrollLeft,398);assert.equal(run('mobileOverviewSlide'),1);
+const current=grid.scrollLeft;down(e(150,200));const vertical=e(155,300);move(vertical);assert.equal(vertical.prevented,undefined);up(e(155,300));assert.equal(grid.scrollLeft,current);
+down(e(250,300));move(e(100,305));run('finishSkillPageGesture(true);');assert.equal(grid.scrollLeft,current);assert.equal(run('skillPageGesture'),null);
+console.log('Passed: header HP and six-zone board, close lifecycle, horizontal skill gestures, normal vertical scrolling, page bounds and cancelled swipes.');
